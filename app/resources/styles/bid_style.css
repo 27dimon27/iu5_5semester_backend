@@ -1,0 +1,138 @@
+input[type="number"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+
+html, body {
+    background-color: black;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+header {
+    width: 100%;
+    height: 75px;
+    background-color: #76B900;
+    display: flex;
+    align-items: center;
+}
+
+header h1 {
+    text-align: left;
+    margin-left: 10%;
+    text-decoration: none;
+    color: white;
+    font-size: 2.5rem;
+}
+
+a:link, a:visited, a:active a:hover {
+    text-decoration: none;
+    color: white;
+}
+
+.page-title {
+    color: white;
+    font-size: 30px;
+    margin-bottom: 1%;
+}
+
+.titles {
+    color: white;
+    font-size: 25px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3%;
+}
+
+.titles-icon {
+    width: 65px;
+}
+
+.titles-title, .service-title {
+    width: 30%;
+}
+
+.service-row {
+    height: 100px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 3%;
+}
+
+.service-row > * {
+    background-color: white;
+    border-radius: 15px;
+    outline: 5px solid #76B900;
+    height: 50px;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.service-icon {
+    height: 65px;
+    width: 65px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.service-icon img {
+    height: 55px;
+    width: 55px;
+}
+
+.titles-count, .titles-grade, .titles-price,
+.service-count, .service-grade, .service-price {
+    width: 12.5%;
+}
+
+.service-count {
+    border: none;
+    text-align: center;
+}
+
+.service-grade {
+    text-align: center;
+}
+
+.final-cost {
+    height: 40px;
+    width: 40%;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 1%;
+    margin-left: 7.5%;
+}
+
+.final-cost-text {
+    color: white;
+    font-size: 22.5px;
+}
+
+.final-cost-result {
+    width: 50%;
+    height: 100%;
+    background-color: white;
+    outline: 5px solid #76B900;
+    border-radius: 15px;
+    font-size: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

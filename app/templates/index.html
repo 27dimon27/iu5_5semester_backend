@@ -1,0 +1,35 @@
+<html lang="en">
+<head>
+    <title>lab1</title>
+    <link rel="stylesheet" href="/static/styles/index_style.css">
+</head>
+<header>
+    <h1><a href="/services">Разработка ПО</a></h1>
+</header>
+<body>
+    <h2 class="page-title">Услуги</h2>
+    <div class="search-and-bid">
+        <form class="search-form" action="/services" method="GET">
+            <div class="search">
+                <p>Поиск по названию:</p>
+                <input type="text" name="serviceSearch" placeholder="Введите название" value="{{ .serviceSearch }}"/>
+            </div>
+            <button class="serviceSearch-btn" type="submit">Найти</button>
+        </form>
+        <div class="bid" role="button" onclick="window.location.href='/bid'">
+            <div class="main-bid"></div>
+            <div class="extra-bid">3</div>
+        </div>
+    </div>
+
+    <div class="cards-container">
+        {{ range .services }}
+        <div class="card" role="button" onclick="window.location.href='/services/{{ .ID }}'">
+            <img src="http://localhost:9000/software-images/{{ .Image }}">
+            <p class="card-title">{{ .Title }}</p>
+            <p class="card-price">{{ .PriceMeasure }}</p>
+        </div>
+        {{ end }}
+    </div>
+</body>
+</html>

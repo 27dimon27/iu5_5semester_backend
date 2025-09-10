@@ -1,0 +1,39 @@
+<html lang="en">
+<head>
+    <title>lab1</title>
+    <link rel="stylesheet" href="/static/styles/bid_style.css">
+</head>
+<header>
+    <h1><a href="/services">Разработка ПО</a></h1>
+</header>
+<body>
+    <h2 class="page-title">Текущая заявка</h2>
+    <div class="titles">
+        <p class="titles-icon">#</p>
+        <p class="titles-title">Услуга</p>
+        <p class="titles-count">Количество</p>
+        <p class="titles-grade">Грейд</p>
+        <p class="titles-price">Стоимость</p>
+    </div>
+    {{ range .bid.Services }}
+    <div class="service-row">
+        <div class="service-icon">
+            <img src="http://localhost:9000/software-images/{{ .Image }}" />
+        </div>
+        <div class="service-title">{{ .Title }}</div>
+        <input class="service-count" id="service-count-{{ .ID }}" type="number" value="1" min="1" max="100"/>
+        <select class="service-grade" id="gradeSelect" name="grade">
+            {{ range $.coefficients }}
+            <option value="{{ .Level }}">{{ .Level }}</option>
+            {{ end }}
+        </select>
+        <div class="service-price">{{ .Price }} руб</div>
+    </div>
+    {{ end }}
+
+    <div class="final-cost">
+        <div class="final-cost-text">Итоговая стоимость:</div>
+        <div class="final-cost-result">{{ .sum }} руб</div>
+    </div>
+</body>
+</html> 

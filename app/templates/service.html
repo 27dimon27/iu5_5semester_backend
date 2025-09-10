@@ -1,0 +1,21 @@
+<html lang="en">
+<head>
+    <title>lab1</title>
+    <link rel="stylesheet" href="/static/styles/service_style.css">
+</head>
+<header>
+    <h1><a href="/services">Разработка ПО</a></h1>
+</header>
+<body>
+    <div class="container">
+        <div class="card">
+            <img src="http://localhost:9000/software-images/{{ .service.Image }}">
+        </div>
+        <div class="card-text">
+            <p class="card-title">{{ .service.Title }}</p>
+            <p class="card-description">{{ .service.Description }}</p>
+            <p class="card-team">{{ .service.Team }}</p>
+        </div>
+    </div>
+</body>
+</html>
