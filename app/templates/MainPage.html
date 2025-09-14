@@ -1,7 +1,7 @@
 <html lang="en">
 <head>
     <title>lab1</title>
-    <link rel="stylesheet" href="/static/styles/index_style.css">
+    <link rel="stylesheet" href="/static/styles/MainPage.css">
 </head>
 <header>
     <h1><a href="/services">Разработка ПО</a></h1>
@@ -16,9 +16,9 @@
             </div>
             <button class="serviceSearch-btn" type="submit">Найти</button>
         </form>
-        <div class="bid" role="button" onclick="window.location.href='/bid'">
+        <div class="bid" role="button" onclick="window.location.href='/bids/1'">
             <div class="main-bid"></div>
-            <div class="extra-bid">3</div>
+            <div class="extra-bid">{{ .bidCount }}</div>
         </div>
     </div>
 
