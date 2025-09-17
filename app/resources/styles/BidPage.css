@@ -99,7 +99,7 @@ a:link, a:visited, a:active a:hover {
 .service-row > * {
     background-color: white;
     border-radius: 15px;
-    outline: 4px solid #76B900;
+    outline: 3px solid #76B900;
     height: 50px;
     font-size: 20px;
     display: flex;
@@ -164,7 +164,7 @@ a:link, a:visited, a:active a:hover {
     width: 50%;
     height: 100%;
     background-color: white;
-    outline: 4px solid #76B900;
+    outline: 3px solid #76B900;
     border-radius: 15px;
     font-size: 25px;
     display: flex;
@@ -200,24 +200,6 @@ a:link, a:visited, a:active a:hover {
     height: 25px;
     font-size: 20px;
 }
-
-/* .choose-btn-calc {
-    height: 100%;
-    width: 100%;
-    border-radius: 15px;
-    border: none;
-    background-color: orange;
-    cursor: pointer;
-}
-
-.choose-btn-del {
-    height: 100%;
-    width: 100%;
-    border-radius: 15px;
-    border: none;
-    background-color: red;
-    cursor: pointer;
-} */
 
 .choose-btn-calc {
     background-color: orange;
