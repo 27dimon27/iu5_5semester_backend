@@ -98,7 +98,7 @@ a:link, a:visited, a:active a:hover {
 .service-row > * {
     background-color: white;
     border-radius: 15px;
-    outline: 5px solid #76B900;
+    outline: 3px solid #76B900;
     height: 50px;
     font-size: 20px;
     display: flex;
@@ -152,7 +152,7 @@ a:link, a:visited, a:active a:hover {
     width: 50%;
     height: 100%;
     background-color: white;
-    outline: 5px solid #76B900;
+    outline: 3px solid #76B900;
     border-radius: 15px;
     font-size: 25px;
     display: flex;

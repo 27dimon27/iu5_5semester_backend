@@ -64,7 +64,13 @@ func (c *SoftwareDevServiceController) GetSoftwareDevServicesBid(ctx *gin.Contex
 	var bid SoftwareDevServiceDatabase.SoftwareDevServiceBid
 	var err error
 
-	bid, err = c.SoftwareDevServiceDatabase.GetSoftwareDevServicesBid()
+	idStr := ctx.Param("idBid")
+	bidID, err := strconv.Atoi(idStr)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	bid, err = c.SoftwareDevServiceDatabase.GetSoftwareDevServicesBid(bidID)
 	if err != nil {
 		logrus.Error(err)
 	}

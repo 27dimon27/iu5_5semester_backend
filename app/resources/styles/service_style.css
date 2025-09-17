@@ -29,7 +29,6 @@ a:link, a:visited, a:active a:hover {
 .container {
     display: flex;
     justify-content: center;
-    /* margin-left: 15%; */
     margin-top: 7.5%;
     gap: 50px;
 }
@@ -39,7 +38,7 @@ a:link, a:visited, a:active a:hover {
     width: 300px;
     background-color: white;
     border-radius: 25px;
-    border: #76B900 solid 10px;
+    border: #76B900 solid 5px;
     text-align: center;
 }
 

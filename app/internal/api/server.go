@@ -26,7 +26,7 @@ func StartServer() {
 
 	r.GET("/services", controller.GetSoftwareDevServices)
 	r.GET("/services/:idService", controller.GetSoftwareDevService)
-	r.GET("/bid", controller.GetSoftwareDevServicesBid)
+	r.GET("/bid/:idBid", controller.GetSoftwareDevServicesBid)
 
 	r.Run()
 

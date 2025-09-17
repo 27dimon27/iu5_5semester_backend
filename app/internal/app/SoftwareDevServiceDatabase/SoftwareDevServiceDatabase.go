@@ -166,13 +166,24 @@ func (r *SoftwareDevServiceDatabase) GetSoftwareDevServicesByTitle(title string)
 	return result, nil
 }
 
-func (r *SoftwareDevServiceDatabase) GetSoftwareDevServicesBid() (SoftwareDevServiceBid, error) {
-	bid_services := []int{5, 7, 9}
-	services, _ := r.GetSoftwareDevServices()
-	bid := SoftwareDevServiceBid{
-		ID:       1,
-		Services: []SoftwareDevService{},
+func (r *SoftwareDevServiceDatabase) GetSoftwareDevServicesBid(bidID int) (SoftwareDevServiceBid, error) {
+	bids := []SoftwareDevServiceBid{
+		{
+			ID:       1,
+			Services: []SoftwareDevService{},
+		},
 	}
+
+	var bid SoftwareDevServiceBid
+	for _, oneBid := range bids {
+		if oneBid.ID == bidID {
+			bid = oneBid
+			break
+		}
+	}
+
+	services, _ := r.GetSoftwareDevServices()
+	bid_services := []int{5, 7, 9}
 
 	for _, bid_service := range bid_services {
 		for _, service := range services {
