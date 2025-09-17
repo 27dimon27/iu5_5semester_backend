@@ -2,6 +2,7 @@ package SoftwareDevServiceDatabase
 
 import (
 	"fmt"
+	"time"
 
 	"softwareDev/internal/app/ds"
 
@@ -24,8 +25,8 @@ func NewSoftwareDevServiceDatabase(dsn string) (*SoftwareDevServiceDatabase, err
 	}, nil
 }
 
-func (d *SoftwareDevServiceDatabase) GetCoefficients() []ds.Coefficient {
-	Coefficients := []ds.Coefficient{
+func (d *SoftwareDevServiceDatabase) GetCoefficients() []ds.Coefficients {
+	Coefficients := []ds.Coefficients{
 		{
 			Level: "junior",
 			Coeff: 1.00,
@@ -80,7 +81,7 @@ func (d *SoftwareDevServiceDatabase) GetSoftwareDevService(id int) (ds.SoftwareD
 
 func (d *SoftwareDevServiceDatabase) GetSoftwareDevServicesByTitle(title string) ([]ds.SoftwareDevService, error) {
 	var services []ds.SoftwareDevService
-	err := d.db.Where("name ILIKE ?", "%"+title+"%").Find(&services).Error
+	err := d.db.Where("title ILIKE ?", "%"+title+"%").Find(&services).Error
 	if err != nil {
 		return nil, err
 	}
@@ -116,4 +117,54 @@ func (d *SoftwareDevServiceDatabase) GetSoftwareDevServicesBid(bidID int) (ds.So
 	}
 
 	return bid, servicesInUse, nil
+}
+
+func (d *SoftwareDevServiceDatabase) AddSoftwareDevServiceToBid(serviceID int, bidID int) bool {
+	var count int64
+	d.db.Model(&ds.Service_n_Bid{}).Where("service_id = ? AND bid_id = ?", serviceID, bidID).Count(&count)
+
+	if count > 0 {
+		return false
+	}
+
+	_, bidSize, _ := d.GetSoftwareDevServicesBid(bidID)
+	dataToAdd := ds.Service_n_Bid{
+		ServiceID: uint(serviceID),
+		BidID:     uint(bidID),
+		Count:     1,
+		Index:     uint(len(bidSize)) + 1,
+	}
+
+	result := d.db.Create(&dataToAdd)
+	return result.Error == nil
+}
+
+func (d *SoftwareDevServiceDatabase) DeleteSoftwareDevBid(bidID int) bool {
+	result := d.db.Exec(`
+		UPDATE software_dev_bids SET status = 'удалён'
+		WHERE id = ?
+	`, bidID)
+	return result.Error == nil
+}
+
+func (d *SoftwareDevServiceDatabase) FindUserActiveBid(userID int) int {
+	var bid ds.SoftwareDevBid
+	err := d.db.Where("creator_id = ? AND status = 'черновик'", userID).First(&bid).Error
+	if err != nil {
+		return 0
+	}
+	return int(bid.ID)
+}
+
+func (d *SoftwareDevServiceDatabase) CreateUserActiveBid(userID int) int {
+	createdBid := ds.SoftwareDevBid{
+		Status:     "черновик",
+		DateCreate: time.Now(),
+		CreatorID:  uint(userID),
+	}
+	err := d.db.Create(&createdBid).Error
+	if err != nil {
+		return 0
+	}
+	return int(createdBid.ID)
 }

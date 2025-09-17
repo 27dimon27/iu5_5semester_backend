@@ -8,40 +8,58 @@
 </header>
 <body>
     <h2 class="page-title">Текущая заявка</h2>
-    <div class="companies">
-        <h2 class="companies-text">Выберите компанию:</h2>
-        <select class="companies-select" id="companies-select">
-            {{ range .companies }}
-            <option value="{{ . }}">{{ . }}</option>
-            {{ end }}
-        </select>
-    </div>
-    <div class="titles">
-        <p class="titles-icon">#</p>
-        <p class="titles-title">Услуга</p>
-        <p class="titles-count">Количество</p>
-        <p class="titles-grade">Грейд</p>
-        <p class="titles-price">Стоимость</p>
-    </div>
-    {{ range .services }}
-    <div class="service-row">
-        <div class="service-icon">
-            <img src="http://localhost:9000/software-images/{{ .Image }}" />
+    <form method="POST">
+        <div class="companies">
+            <h2 class="companies-text">Выберите компанию:</h2>
+            <select class="companies-select" id="companies-select" name="company">
+                {{ $com := .company }}
+                {{ range .companies }}
+                <option value="{{ . }}" {{ if eq . $com }}selected{{ end }}>{{ . }}</option>
+                {{ end }}
+            </select>
         </div>
-        <div class="service-title">{{ .Title }}</div>
-        <input class="service-count" id="service-count-{{ .ID }}" type="number" value="1" min="1" max="100"/>
-        <select class="service-grade" id="service-grade">
-            {{ range $.coefficients }}
-            <option value="{{ .Level }}">{{ .Level }}</option>
-            {{ end }}
-        </select>
-        <div class="service-price">{{ .Price }} руб</div>
-    </div>
-    {{ end }}
+        <div class="titles">
+            <p class="titles-icon">#</p>
+            <p class="titles-title">Услуга</p>
+            <p class="titles-count">Количество</p>
+            <p class="titles-grade">Грейд</p>
+            <p class="titles-price">Стоимость</p>
+        </div>
+        {{ range .services }}
+        <input type="hidden" name="service_id[]" value="{{ .Service.ID }}">
+        <div class="service-row">
+            <div class="service-icon">
+                <img src="http://localhost:9000/software-images/{{ .Service.Image }}" />
+            </div>
+            <div class="service-title">{{ .Service.Title }}</div>
+            <input class="service-count" id="service-count-{{ .Service.ID }}" type="number" name="count_{{ .Service.ID }}" value="{{ .Count }}" min="1" max="100"/>
+            <select class="service-grade" id="service-grade" name="grade_{{ .Service.ID }}">
+                {{ $outer := .Grade }}
+                {{ range $.keyCoefs }}
+                <option value="{{ . }}" {{ if eq . $outer }}selected{{ end }}>{{ . }}</option>
+                {{ end }}
+            </select>
+            <div class="service-price">{{ .Sum }} руб</div>
+        </div>
+        {{ end }}
 
-    <div class="final-cost">
-        <div class="final-cost-text">Итоговая стоимость:</div>
-        <div class="final-cost-result">{{ .sum }} руб</div>
-    </div>
+        <div class="final-cost-n-choose-btns">
+            <div class="final-cost">
+                <div class="final-cost-text">Итоговая стоимость:</div>
+                <div class="final-cost-result">{{ .sum }} руб</div>
+            </div>
+            <div class="choose-btns">
+                <!-- <form class="choose-btn-calc-form" action="/bids/deletebid/1" method="POST">
+                    <button type="submit" class="choose-btn-calc">Рассчитать</button>
+                </form> -->
+                <button type="submit" class="choose-btn-calc" formaction="/bids/calcbid/1">Рассчитать</button>
+                <!-- <form class="choose-btn-del-form" action="/bids/deletebid/1" method="POST">
+                    <button type="submit" class="choose-btn-del">Удалить</button>
+                </form> -->
+                <button type="submit" class="choose-btn-del" formaction="/bids/deletebid/1">Удалить</button>
+                <button class="choose-btn-add">Добавить</button>
+            </div>
+        </div>
+    </form>
 </body>
 </html> 

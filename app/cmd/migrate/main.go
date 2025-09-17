@@ -23,6 +23,8 @@ func main() {
 		&ds.SoftwareDevService{},
 		&ds.SoftwareDevBid{},
 		&ds.Service_n_Bid{},
+		&ds.Users{},
+		&ds.ServiceStatus{},
 	)
 	if err != nil {
 		panic("cant migrate db")
@@ -138,7 +140,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:     "черновик",
 				DateCreate: time.Now(),
 				CreatorID:  1,
-				// Services:   []int64{5, 7, 9},
 			},
 		}
 
@@ -178,6 +179,57 @@ func seedDatabase(db *gorm.DB) error {
 			return result.Error
 		}
 		log.Printf("Successfully seeded database with %d service-&-bid", len(initialServiceBid))
+	}
+
+	db.Model(&ds.Users{}).Count(&count)
+
+	if count == 0 {
+		initialUsers := []ds.Users{
+			{
+				Login:       "user",
+				Password:    "user",
+				IsModerator: false,
+			},
+			{
+				Login:       "admin",
+				Password:    "admin",
+				IsModerator: true,
+			},
+		}
+
+		result := db.Create(&initialUsers)
+		if result.Error != nil {
+			return result.Error
+		}
+		log.Printf("Successfully seeded database with %d users", len(initialUsers))
+	}
+
+	db.Model(&ds.ServiceStatus{}).Count(&count)
+
+	if count == 0 {
+		initialStatuses := []ds.ServiceStatus{
+			{
+				Status: "черновик",
+			},
+			{
+				Status: "удалён",
+			},
+			{
+				Status: "сформирован",
+			},
+			{
+				Status: "завершён",
+			},
+			{
+				Status: "отклонён",
+			},
+		}
+
+		result := db.Create(&initialStatuses)
+		if result.Error != nil {
+			return result.Error
+		}
+		log.Printf("Successfully seeded database with %d statuses", len(initialStatuses))
 	}
 
 	return nil

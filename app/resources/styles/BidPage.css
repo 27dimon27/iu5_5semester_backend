@@ -134,14 +134,25 @@ a:link, a:visited, a:active a:hover {
     text-align: center;
 }
 
+.final-cost-n-choose-btns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1%;
+    margin-bottom: 3%;
+}
+
+.final-cost-n-choose-btns > * {
+    width: 50%;
+}
+
 .final-cost {
     height: 40px;
     width: 40%;
     display: flex;
+    justify-content: center;
     align-items: center;
     gap: 20px;
-    margin-top: 1%;
-    margin-left: 7.5%;
 }
 
 .final-cost-text {
@@ -159,4 +170,63 @@ a:link, a:visited, a:active a:hover {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.choose-btns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5%;
+}
+
+.choose-btns > * {
+    height: 100%;
+    width: 25%;
+    border-radius: 15px;
+    outline: 2px solid white;
+    border: none;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.choose-btn-calc-form, .choose-btn-del-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+
+.choose-btn-add, .choose-btn-del, .choose-btn-calc {
+    height: 25px;
+    font-size: 20px;
+}
+
+/* .choose-btn-calc {
+    height: 100%;
+    width: 100%;
+    border-radius: 15px;
+    border: none;
+    background-color: orange;
+    cursor: pointer;
+}
+
+.choose-btn-del {
+    height: 100%;
+    width: 100%;
+    border-radius: 15px;
+    border: none;
+    background-color: red;
+    cursor: pointer;
+} */
+
+.choose-btn-calc {
+    background-color: orange;
+}
+
+.choose-btn-del {
+    background-color: red;
+}
+
+.choose-btn-add {
+    background-color: #76B900;
 }

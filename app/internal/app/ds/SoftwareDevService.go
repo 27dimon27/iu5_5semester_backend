@@ -36,7 +36,26 @@ type Service_n_Bid struct {
 	Bid     SoftwareDevBid     `gorm:"foreignKey:BidID"`
 }
 
-type Coefficient struct {
+type Users struct {
+	ID          uint   `gorm:"primaryKey"`
+	Login       string `gorm:"not null;unique"`
+	Password    string `gorm:"not null"`
+	IsModerator bool   `gorm:"default:false"`
+}
+
+type ServiceStatus struct {
+	ID     uint   `gorm:"primaryKey"`
+	Status string `gorm:"not null;unique"`
+}
+
+type Coefficients struct {
 	Level string
 	Coeff float32
+}
+
+type ServiceInBid struct {
+	Service SoftwareDevService
+	Count   int
+	Grade   string
+	Sum     int
 }
