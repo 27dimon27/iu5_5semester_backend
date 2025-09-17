@@ -18,6 +18,7 @@ type SoftwareDevService struct {
 type SoftwareDevBid struct {
 	ID          int       `gorm:"primaryKey"`
 	Status      string    `gorm:"type:varchar(15);not null"`
+	Company     string    `gorm:"type:varchar(30);not null;default:Apple"`
 	DateCreate  time.Time `gorm:"not null"`
 	DateUpdate  time.Time `gorm:"default:null"`
 	DateFinish  time.Time `gorm:"default:null"`
