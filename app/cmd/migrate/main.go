@@ -24,7 +24,6 @@ func main() {
 		&ds.SoftwareDevBid{},
 		&ds.Service_n_Bid{},
 		&ds.Users{},
-		&ds.ServiceStatus{},
 	)
 	if err != nil {
 		panic("cant migrate db")
@@ -43,85 +42,85 @@ func seedDatabase(db *gorm.DB) error {
 	if count == 0 {
 		initialServices := []ds.SoftwareDevService{
 			{
-				ID:           1,
-				Image:        "web-project.png",
-				Title:        "Проектирование веб-приложения",
-				Description:  "Профессиональная команда разработчиков спроектирует веб-приложение по Вашему техническому заданию!",
-				Price:        5_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          1,
+				Image:       "web-project.png",
+				Title:       "Проектирование веб-приложения",
+				Description: "Профессиональная команда разработчиков спроектирует веб-приложение по Вашему техническому заданию!",
+				Price:       5_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           2,
-				Image:        "desktop-project.png",
-				Title:        "Проектирование десктопного приложения",
-				Description:  "Профессиональная команда разработчиков спроектирует десктопное приложение по Вашему техническому заданию!",
-				Price:        6_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          2,
+				Image:       "desktop-project.png",
+				Title:       "Проектирование десктопного приложения",
+				Description: "Профессиональная команда разработчиков спроектирует десктопное приложение по Вашему техническому заданию!",
+				Price:       6_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           3,
-				Image:        "mobile-project.png",
-				Title:        "Проектирование мобильного приложения",
-				Description:  "Профессиональная команда разработчиков спроектирует мобильное приложение по Вашему техническому заданию!",
-				Price:        7_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          3,
+				Image:       "mobile-project.png",
+				Title:       "Проектирование мобильного приложения",
+				Description: "Профессиональная команда разработчиков спроектирует мобильное приложение по Вашему техническому заданию!",
+				Price:       7_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           4,
-				Image:        "web.png",
-				Title:        "Разработка веб-приложения",
-				Description:  "Профессиональная команда разработчиков разработает веб-приложение по Вашему техническому заданию!",
-				Price:        40_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          4,
+				Image:       "web.png",
+				Title:       "Разработка веб-приложения",
+				Description: "Профессиональная команда разработчиков разработает веб-приложение по Вашему техническому заданию!",
+				Price:       40_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           5,
-				Image:        "desktop.png",
-				Title:        "Разработка десктопного приложения",
-				Description:  "Профессиональная команда разработчиков разработает десктопное приложение по Вашему техническому заданию!",
-				Price:        45_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          5,
+				Image:       "desktop.png",
+				Title:       "Разработка десктопного приложения",
+				Description: "Профессиональная команда разработчиков разработает десктопное приложение по Вашему техническому заданию!",
+				Price:       45_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           6,
-				Image:        "mobile.png",
-				Title:        "Разработка мобильного приложения",
-				Description:  "Профессиональная команда разработчиков разработает мобильное приложение по Вашему техническому заданию!",
-				Price:        50_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          6,
+				Image:       "mobile.png",
+				Title:       "Разработка мобильного приложения",
+				Description: "Профессиональная команда разработчиков разработает мобильное приложение по Вашему техническому заданию!",
+				Price:       50_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           7,
-				Image:        "test.png",
-				Title:        "Тестирование десктопного, мобильного и веб-приложений",
-				Description:  "Профессиональная команда разработчиков протестирует Ваше приложение на предмет наличия уязвимостей!",
-				Price:        2_500,
-				PriceMeasure: "руб/кейс",
-				Status:       true,
+				ID:          7,
+				Image:       "test.png",
+				Title:       "Тестирование десктопного, мобильного и веб-приложений",
+				Description: "Профессиональная команда разработчиков протестирует Ваше приложение на предмет наличия уязвимостей!",
+				Price:       2_500,
+				// PriceMeasure: "руб/кейс",
+				Status: true,
 			},
 			{
-				ID:           8,
-				Image:        "ui-ux.png",
-				Title:        "Проектирование UX/UI дизайна",
-				Description:  "Профессиональная команда разработчиков разработает UX/UI дизайн для Вашего приложения по Вашему техническому заданию!",
-				Price:        8_000,
-				PriceMeasure: "руб/стр",
-				Status:       true,
+				ID:          8,
+				Image:       "ui-ux.png",
+				Title:       "Проектирование UX/UI дизайна",
+				Description: "Профессиональная команда разработчиков разработает UX/UI дизайн для Вашего приложения по Вашему техническому заданию!",
+				Price:       8_000,
+				// PriceMeasure: "руб/стр",
+				Status: true,
 			},
 			{
-				ID:           9,
-				Image:        "audit.png",
-				Title:        "Техническая консультация и аудит проекта",
-				Description:  "Профессиональная команда разработчиков проконсультирует Вас по проекту и даст объективную и честную оценку!",
-				Price:        3_500,
-				PriceMeasure: "руб/час",
-				Status:       true,
+				ID:          9,
+				Image:       "audit.png",
+				Title:       "Техническая консультация и аудит проекта",
+				Description: "Профессиональная команда разработчиков проконсультирует Вас по проекту и даст объективную и честную оценку!",
+				Price:       3_500,
+				// PriceMeasure: "руб/час",
+				Status: true,
 			},
 		}
 
@@ -202,34 +201,6 @@ func seedDatabase(db *gorm.DB) error {
 			return result.Error
 		}
 		log.Printf("Successfully seeded database with %d users", len(initialUsers))
-	}
-
-	db.Model(&ds.ServiceStatus{}).Count(&count)
-
-	if count == 0 {
-		initialStatuses := []ds.ServiceStatus{
-			{
-				Status: "черновик",
-			},
-			{
-				Status: "удалён",
-			},
-			{
-				Status: "сформирован",
-			},
-			{
-				Status: "завершён",
-			},
-			{
-				Status: "отклонён",
-			},
-		}
-
-		result := db.Create(&initialStatuses)
-		if result.Error != nil {
-			return result.Error
-		}
-		log.Printf("Successfully seeded database with %d statuses", len(initialStatuses))
 	}
 
 	return nil

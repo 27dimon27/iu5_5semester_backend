@@ -5,47 +5,42 @@ import (
 )
 
 type SoftwareDevService struct {
-	ID           uint   `gorm:"primaryKey"`
-	Image        string `gorm:"type:text;default:null"`
-	Title        string `gorm:"type:text;default:null"`
-	Description  string `gorm:"type:text;default:null"`
-	Price        float32
-	PriceMeasure string `gorm:"type:varchar(10);default:null"`
-	Grade        string `gorm:"type:varchar(10);default:null"`
-	Status       bool
+	ID          int     `gorm:"primaryKey"`
+	Image       string  `gorm:"type:text;default:null"`
+	Title       string  `gorm:"type:varchar(100);default:null"`
+	Description string  `gorm:"type:varchar(1000);default:null"`
+	Price       float32 `gorm:"type numeric(10,2)"`
+	Status      bool    `gorm:"type boolean"`
+	// PriceMeasure string `gorm:"type:varchar(10);default:null"`
+	// Grade  string `gorm:"type:varchar(10);default:null"`
 }
 
 type SoftwareDevBid struct {
-	ID          uint      `gorm:"primaryKey"`
+	ID          int       `gorm:"primaryKey"`
 	Status      string    `gorm:"type:varchar(15);not null"`
 	DateCreate  time.Time `gorm:"not null"`
 	DateUpdate  time.Time `gorm:"default:null"`
 	DateFinish  time.Time `gorm:"default:null"`
-	CreatorID   uint      `gorm:"not null"`
-	ModeratorID uint
+	CreatorID   int       `gorm:"not null"`
+	ModeratorID int       `gorm:"default:null"`
 }
 
 type Service_n_Bid struct {
-	ID        uint `gorm:"primaryKey"`
-	ServiceID uint `gorm:"not null;uniqueIndex:idx_service_bid"`
-	BidID     uint `gorm:"not null;uniqueIndex:idx_service_bid"`
-	Count     uint `gorm:"not null;default:1"`
-	Index     uint `gorm:"not null"`
+	ID        int `gorm:"primaryKey"`
+	ServiceID int `gorm:"not null;uniqueIndex:idx_service_bid"`
+	BidID     int `gorm:"not null;uniqueIndex:idx_service_bid"`
+	Count     int `gorm:"not null;default:1"`
+	Index     int `gorm:"not null"`
 
 	Service SoftwareDevService `gorm:"foreignKey:ServiceID"`
 	Bid     SoftwareDevBid     `gorm:"foreignKey:BidID"`
 }
 
 type Users struct {
-	ID          uint   `gorm:"primaryKey"`
-	Login       string `gorm:"not null;unique"`
-	Password    string `gorm:"not null"`
+	ID          int    `gorm:"primaryKey"`
+	Login       string `gorm:"type:varchar(30);not null;unique"`
+	Password    string `gorm:"type:varchar(100);not null"`
 	IsModerator bool   `gorm:"default:false"`
-}
-
-type ServiceStatus struct {
-	ID     uint   `gorm:"primaryKey"`
-	Status string `gorm:"not null;unique"`
 }
 
 type Coefficients struct {

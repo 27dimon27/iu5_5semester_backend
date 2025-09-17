@@ -244,37 +244,3 @@ func (c *SoftwareDevServiceController) DeleteSoftwareDevBid(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, "/services")
 	}
 }
-
-// func (c *SoftwareDevServiceController) CalculateSoftwareDevBid(ctx *gin.Context) {
-// 	userID := ctx.Param("userID")
-
-// 	var counts, grades []string
-// 	strServicesIDs := ctx.PostFormArray("service_id[]")
-// 	for _, strServiceID := range strServicesIDs {
-// 		counts = append(counts, "count_"+strServiceID)
-// 		grades = append(grades, "grade_"+strServiceID)
-// 	}
-
-// 	services, err := c.SoftwareDevServiceDatabase.GetSoftwareDevServices()
-// 	if err != nil {
-// 		c.errorController(ctx, http.StatusInternalServerError, err)
-// 	}
-
-// 	var sums []float32
-// 	var cur_sum float32
-// 	var cur_count int
-// 	coefs := c.SoftwareDevServiceDatabase.GetCoefficients()
-
-// 	for idxService, strServiceID := range strServicesIDs {
-// 		for _, service := range services {
-// 			serviceID, _ := strconv.Atoi(strServiceID)
-// 			if serviceID == int(service.ID) {
-// 				cur_count, _ = strconv.Atoi(counts[idxService])
-// 				cur_sum = service.Price * float32(cur_count) * coefs[grades[idxService]]
-// 				sums = append(sums, cur_sum)
-// 			}
-// 		}
-// 	}
-
-// 	ctx.Redirect(http.StatusFound, "/bids/"+userID)
-// }

@@ -129,10 +129,10 @@ func (d *SoftwareDevServiceDatabase) AddSoftwareDevServiceToBid(serviceID int, b
 
 	_, bidSize, _ := d.GetSoftwareDevServicesBid(bidID)
 	dataToAdd := ds.Service_n_Bid{
-		ServiceID: uint(serviceID),
-		BidID:     uint(bidID),
+		ServiceID: serviceID,
+		BidID:     bidID,
 		Count:     1,
-		Index:     uint(len(bidSize)) + 1,
+		Index:     len(bidSize) + 1,
 	}
 
 	result := d.db.Create(&dataToAdd)
@@ -160,7 +160,7 @@ func (d *SoftwareDevServiceDatabase) CreateUserActiveBid(userID int) int {
 	createdBid := ds.SoftwareDevBid{
 		Status:     "черновик",
 		DateCreate: time.Now(),
-		CreatorID:  uint(userID),
+		CreatorID:  userID,
 	}
 	err := d.db.Create(&createdBid).Error
 	if err != nil {
