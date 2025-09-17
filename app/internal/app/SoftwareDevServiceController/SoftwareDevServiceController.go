@@ -76,9 +76,14 @@ func (c *SoftwareDevServiceController) GetSoftwareDevServicesBid(ctx *gin.Contex
 
 	coefficients := c.SoftwareDevServiceDatabase.GetCoefficients()
 
+	companies := []string{
+		"Apple", "Microsoft", "Google", "Amazon", "Tesla",
+	}
+
 	ctx.HTML(http.StatusOK, "bid.html", gin.H{
 		"bid":          bid,
 		"sum":          sum,
 		"coefficients": coefficients,
+		"companies":    companies,
 	})
 }

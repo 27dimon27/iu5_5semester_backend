@@ -8,6 +8,14 @@
 </header>
 <body>
     <h2 class="page-title">Текущая заявка</h2>
+    <div class="companies">
+        <h2 class="companies-text">Выберите компанию:</h2>
+        <select class="companies-select" id="companies-select">
+            {{ range .companies }}
+            <option value="{{ . }}">{{ . }}</option>
+            {{ end }}
+        </select>
+    </div>
     <div class="titles">
         <p class="titles-icon">#</p>
         <p class="titles-title">Услуга</p>

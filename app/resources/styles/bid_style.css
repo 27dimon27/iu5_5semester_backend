@@ -45,6 +45,29 @@ a:link, a:visited, a:active a:hover {
     margin-bottom: 1%;
 }
 
+.companies {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    gap: 5%;
+}
+
+.companies-text {
+    color: white;
+    font-size: 20px;
+}
+
+.companies-select {
+    background-color: white;
+    border-radius: 15px;
+    outline: 3px solid #76B900;
+    height: 50%;
+    width: 15%;
+    text-align: center;
+    font-size: 16px;
+}
+
 .titles {
     color: white;
     font-size: 25px;
