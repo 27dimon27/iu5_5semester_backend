@@ -12,7 +12,7 @@ input[type="number"]::-webkit-inner-spin-button {
 
 
 html, body {
-    background-color: black;
+    background-color: #f7f7f7;
     margin: 0;
     padding: 0;
     text-align: center;
@@ -40,7 +40,7 @@ a:link, a:visited, a:active a:hover {
 }
 
 .page-title {
-    color: white;
+    color: black;
     font-size: 30px;
     margin-bottom: 1%;
 }
@@ -54,7 +54,7 @@ a:link, a:visited, a:active a:hover {
 }
 
 .companies-text {
-    color: white;
+    color: black;
     font-size: 20px;
 }
 
@@ -69,7 +69,7 @@ a:link, a:visited, a:active a:hover {
 }
 
 .titles {
-    color: white;
+    color: black;
     font-size: 25px;
     width: 100%;
     display: flex;
@@ -144,7 +144,7 @@ a:link, a:visited, a:active a:hover {
 }
 
 .final-cost-text {
-    color: white;
+    color: black;
     font-size: 22.5px;
 }
 

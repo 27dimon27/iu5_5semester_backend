@@ -1,5 +1,5 @@
 html, body {
-    background-color: black;
+    background-color: #f7f7f7;
     margin: 0;
     padding: 0;
 }
@@ -34,7 +34,7 @@ header img {
 .page-title {
     text-align: center;
     font-size: 40px;
-    color: white;
+    color: black;
     margin-top: 2%;
 }
 
@@ -67,7 +67,7 @@ header img {
 .search {
     height: 30px;
     width: 600px;
-    color: white;
+    color: black;
     font-weight: normal;
     font-size: 20;
     display: flex;
@@ -109,7 +109,7 @@ header img {
 }
 
 .main-bid:hover {
-    box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 15px 5px gray;
 }
 
 .extra-bid {
@@ -148,7 +148,7 @@ header img {
 }
 
 .card:hover {
-    box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 15px 5px gray;
 }
 
 .card img {
