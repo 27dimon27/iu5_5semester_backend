@@ -23,13 +23,13 @@ func NewSoftwareDevServiceController(d *SoftwareDevServiceDatabase.SoftwareDevSe
 }
 
 func (c *SoftwareDevServiceController) RegisterController(router *gin.Engine) {
-	router.GET("/services", c.GetSoftwareDevServices)
-	router.GET("/services/:serviceID", c.GetSoftwareDevService)
-	router.GET("/bids/:userID", c.GetSoftwareDevServicesBid)
+	router.GET("/softwares", c.GetSoftwareDevServices)
+	router.GET("/softwares/:softwareID", c.GetSoftwareDevService)
+	router.GET("/software-bids/:softwareBidID", c.GetSoftwareDevServicesBid)
 
-	router.POST("/:userID/addservice/:serviceID", c.AddSoftwareDevServiceToBid)
-	router.POST("/bids/deletebid/:userID", c.DeleteSoftwareDevBid)
-	router.POST("/bids/calcbid/:userID", c.GetSoftwareDevServicesBid)
+	router.POST("/:softwareBidID/add-software/:softwareID", c.AddSoftwareDevServiceToBid)
+	router.POST("/software-bids/delete-software-bid/:softwareBidID", c.DeleteSoftwareDevBid)
+	router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareDevServicesBid)
 }
 
 func (c *SoftwareDevServiceController) RegisterStatic(router *gin.Engine) {
@@ -50,7 +50,7 @@ func (c *SoftwareDevServiceController) GetSoftwareDevServices(ctx *gin.Context) 
 	var bidCount []ds.SoftwareDevService
 	var err error
 
-	searchQuery := ctx.Query("serviceSearch")
+	searchQuery := ctx.Query("software-search")
 	if searchQuery == "" {
 		services, err = c.SoftwareDevServiceDatabase.GetSoftwareDevServices()
 		if err != nil {
@@ -74,14 +74,15 @@ func (c *SoftwareDevServiceController) GetSoftwareDevServices(ctx *gin.Context) 
 	}
 
 	ctx.HTML(http.StatusOK, "MainPage.html", gin.H{
-		"services":      services,
-		"serviceSearch": searchQuery,
-		"bidCount":      len(bidCount),
+		"services":       services,
+		"softwareSearch": searchQuery,
+		"bidCount":       len(bidCount),
+		"bidID":          bidID,
 	})
 }
 
 func (c *SoftwareDevServiceController) GetSoftwareDevService(ctx *gin.Context) {
-	idStr := ctx.Param("serviceID")
+	idStr := ctx.Param("softwareID")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -102,12 +103,12 @@ func (c *SoftwareDevServiceController) GetSoftwareDevServicesBid(ctx *gin.Contex
 	var services []ds.SoftwareDevService
 	var err error
 
-	userID, err := strconv.Atoi(ctx.Param("userID"))
+	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
 
-	bidID := c.SoftwareDevServiceDatabase.FindUserActiveBid(userID)
+	// bidID := c.SoftwareDevServiceDatabase.FindUserActiveBid(userID)
 
 	if bidID != 0 {
 		bid, services, err = c.SoftwareDevServiceDatabase.GetSoftwareDevServicesBid(bidID)
@@ -208,39 +209,41 @@ func (c *SoftwareDevServiceController) GetSoftwareDevServicesBid(ctx *gin.Contex
 		"companies": companies,
 		"sum":       sum,
 		"keyCoefs":  keyCoefs,
+		"bidID":     bidID,
 	})
 }
 
 func (c *SoftwareDevServiceController) AddSoftwareDevServiceToBid(ctx *gin.Context) {
-	serviceID, err := strconv.Atoi(ctx.Param("serviceID"))
+	serviceID, err := strconv.Atoi(ctx.Param("softwareID"))
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
-	userID, err := strconv.Atoi(ctx.Param("userID"))
+	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
 
-	bidID := c.SoftwareDevServiceDatabase.FindUserActiveBid(userID)
+	userID := 1
+	// bidID := c.SoftwareDevServiceDatabase.FindUserActiveBid(userID)
 
 	if bidID == 0 {
 		bidID = c.SoftwareDevServiceDatabase.CreateUserActiveBid(userID)
 	}
 
 	_ = c.SoftwareDevServiceDatabase.AddSoftwareDevServiceToBid(serviceID, bidID)
-	ctx.Redirect(http.StatusFound, "/services")
+	ctx.Redirect(http.StatusFound, "/softwares")
 }
 
 func (c *SoftwareDevServiceController) DeleteSoftwareDevBid(ctx *gin.Context) {
-	userID, err := strconv.Atoi(ctx.Param("userID"))
+	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
 
-	bidID := c.SoftwareDevServiceDatabase.FindUserActiveBid(userID)
+	// bidID := c.SoftwareDevServiceDatabase.FindUserActiveBid(userID)
 
 	result := c.SoftwareDevServiceDatabase.DeleteSoftwareDevBid(bidID)
 	if result {
-		ctx.Redirect(http.StatusFound, "/services")
+		ctx.Redirect(http.StatusFound, "/softwares")
 	}
 }

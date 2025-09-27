@@ -19,6 +19,11 @@ func main() {
 		panic("failed to connect database")
 	}
 
+	err = dropTablesInDatabase(db)
+	if err != nil {
+		panic("cant drop db")
+	}
+
 	err = db.AutoMigrate(
 		&ds.SoftwareDevService{},
 		&ds.SoftwareDevBid{},
@@ -35,6 +40,24 @@ func main() {
 	}
 }
 
+func dropTablesInDatabase(db *gorm.DB) error {
+	if err := db.Exec("DROP TABLE IF EXISTS service_n_bids").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("DROP TABLE IF EXISTS software_dev_bids").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("DROP TABLE IF EXISTS software_dev_services").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("DROP TABLE IF EXISTS users").Error; err != nil {
+		return err
+	}
+
+	log.Println("All tables cleared successfully")
+	return nil
+}
+
 func seedDatabase(db *gorm.DB) error {
 	var count int64
 	db.Model(&ds.SoftwareDevService{}).Count(&count)
@@ -47,8 +70,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Проектирование веб-приложения",
 				Description: "Профессиональная команда разработчиков спроектирует веб-приложение по Вашему техническому заданию!",
 				Price:       5_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          2,
@@ -56,8 +78,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Проектирование десктопного приложения",
 				Description: "Профессиональная команда разработчиков спроектирует десктопное приложение по Вашему техническому заданию!",
 				Price:       6_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          3,
@@ -65,8 +86,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Проектирование мобильного приложения",
 				Description: "Профессиональная команда разработчиков спроектирует мобильное приложение по Вашему техническому заданию!",
 				Price:       7_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          4,
@@ -74,8 +94,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Разработка веб-приложения",
 				Description: "Профессиональная команда разработчиков разработает веб-приложение по Вашему техническому заданию!",
 				Price:       40_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          5,
@@ -83,8 +102,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Разработка десктопного приложения",
 				Description: "Профессиональная команда разработчиков разработает десктопное приложение по Вашему техническому заданию!",
 				Price:       45_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          6,
@@ -92,8 +110,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Разработка мобильного приложения",
 				Description: "Профессиональная команда разработчиков разработает мобильное приложение по Вашему техническому заданию!",
 				Price:       50_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          7,
@@ -101,8 +118,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Тестирование десктопного, мобильного и веб-приложений",
 				Description: "Профессиональная команда разработчиков протестирует Ваше приложение на предмет наличия уязвимостей!",
 				Price:       2_500,
-				// PriceMeasure: "руб/кейс",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          8,
@@ -110,8 +126,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Проектирование UX/UI дизайна",
 				Description: "Профессиональная команда разработчиков разработает UX/UI дизайн для Вашего приложения по Вашему техническому заданию!",
 				Price:       8_000,
-				// PriceMeasure: "руб/стр",
-				Status: true,
+				Status:      true,
 			},
 			{
 				ID:          9,
@@ -119,8 +134,7 @@ func seedDatabase(db *gorm.DB) error {
 				Title:       "Техническая консультация и аудит проекта",
 				Description: "Профессиональная команда разработчиков проконсультирует Вас по проекту и даст объективную и честную оценку!",
 				Price:       3_500,
-				// PriceMeasure: "руб/час",
-				Status: true,
+				Status:      true,
 			},
 		}
 

@@ -11,8 +11,6 @@ type SoftwareDevService struct {
 	Description string  `gorm:"type:varchar(1000);default:null"`
 	Price       float32 `gorm:"type numeric(10,2)"`
 	Status      bool    `gorm:"type boolean"`
-	// PriceMeasure string `gorm:"type:varchar(10);default:null"`
-	// Grade  string `gorm:"type:varchar(10);default:null"`
 }
 
 type SoftwareDevBid struct {

@@ -4,7 +4,7 @@
     <link rel="stylesheet" href="/static/styles/BidPage.css">
 </head>
 <header>
-    <h1><a href="/services">Разработка ПО</a></h1>
+    <h1><a href="/softwares">Разработка ПО</a></h1>
 </header>
 <body>
     <h2 class="page-title">Текущая заявка</h2>
@@ -49,14 +49,8 @@
                 <div class="final-cost-result">{{ .sum }} руб</div>
             </div>
             <div class="choose-btns">
-                <!-- <form class="choose-btn-calc-form" action="/bids/deletebid/1" method="POST">
-                    <button type="submit" class="choose-btn-calc">Рассчитать</button>
-                </form> -->
-                <button type="submit" class="choose-btn-calc" formaction="/bids/calcbid/1">Рассчитать</button>
-                <!-- <form class="choose-btn-del-form" action="/bids/deletebid/1" method="POST">
-                    <button type="submit" class="choose-btn-del">Удалить</button>
-                </form> -->
-                <button type="submit" class="choose-btn-del" formaction="/bids/deletebid/1">Удалить</button>
+                <button type="submit" class="choose-btn-calc" formaction="/software-bids/calc-software-bid/{{ .bidID }}">Рассчитать</button>
+                <button type="submit" class="choose-btn-del" formaction="/software-bids/delete-software-bid/{{ .bidID }}">Удалить</button>
                 <button class="choose-btn-add">Добавить</button>
             </div>
         </div>

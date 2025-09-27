@@ -1,5 +1,5 @@
 html, body {
-    background-color: black;
+    background-color: #f7f7f7;
     margin: 0;
     padding: 0;
 }
@@ -34,7 +34,7 @@ header img {
 .page-title {
     text-align: center;
     font-size: 40px;
-    color: white;
+    color: black;
     margin-top: 2%;
 }
 
@@ -67,7 +67,7 @@ header img {
 .search {
     height: 30px;
     width: 600px;
-    color: white;
+    color: black;
     font-weight: normal;
     font-size: 20;
     display: flex;
@@ -92,6 +92,16 @@ header img {
     margin-left: auto;
     margin-right: 5%;
     display: flex;
+}
+
+.bid.disabled {
+    filter: grayscale(100%);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.bid.disabled button {
+    cursor: not-allowed;
 }
 
 .main-bid {

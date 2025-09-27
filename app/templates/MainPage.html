@@ -4,19 +4,19 @@
     <link rel="stylesheet" href="/static/styles/MainPage.css">
 </head>
 <header>
-    <h1><a href="/services">Разработка ПО</a></h1>
+    <h1><a href="/softwares">Разработка ПО</a></h1>
 </header>
 <body>
     <h2 class="page-title">Услуги</h2>
     <div class="search-and-bid">
-        <form class="search-form" action="/services" method="GET">
+        <form class="search-form" action="/softwares" method="GET">
             <div class="search">
                 <p>Поиск по названию:</p>
-                <input type="text" name="serviceSearch" placeholder="Введите название" value="{{ .serviceSearch }}"/>
+                <input type="text" name="software-search" placeholder="Введите название" value="{{ .softwareSearch }}"/>
             </div>
-            <button class="serviceSearch-btn" type="submit">Найти</button>
+            <button class="service-search-btn" type="submit">Найти</button>
         </form>
-        <form class="bid" action="/bids/1" method="GET">
+        <form class="bid {{ if eq .bidCount 0 }}disabled{{ end }}" action="/software-bids/{{ .bidID }}" method="GET">
             <button class="main-bid"></button>
             <button class="extra-bid">{{ .bidCount }}</button>
         </form>
@@ -28,8 +28,8 @@
             <img src="http://localhost:9000/software-images/{{ .Image }}">
             <p class="card-title">{{ .Title }}</p>
             <div class="card-btns">
-                <button class="card-btn-detail" onclick="window.location.href='/services/{{ .ID }}'">Подробнее</button>
-                <form class="card-btn-add-form" action="1/addservice/{{ .ID }}" method="POST">
+                <button class="card-btn-detail" onclick="window.location.href='/softwares/{{ .ID }}'">Подробнее</button>
+                <form class="card-btn-add-form" action="{{ $.bidID }}/add-software/{{ .ID }}" method="POST">
                     <button type="submit" class="card-btn-add">Добавить</button>
                 </form>
             </div>
