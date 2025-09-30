@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"softwareDev/internal/app/ds"
-	"softwareDev/internal/app/dsn"
+	"software/internal/app/ds"
+	"software/internal/app/dsn"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -25,8 +25,8 @@ func main() {
 	}
 
 	err = db.AutoMigrate(
-		&ds.SoftwareDevService{},
-		&ds.SoftwareDevBid{},
+		&ds.SoftwareService{},
+		&ds.SoftwareBid{},
 		&ds.Service_n_Bid{},
 		&ds.Users{},
 	)
@@ -44,10 +44,10 @@ func dropTablesInDatabase(db *gorm.DB) error {
 	if err := db.Exec("DROP TABLE IF EXISTS service_n_bids").Error; err != nil {
 		return err
 	}
-	if err := db.Exec("DROP TABLE IF EXISTS software_dev_bids").Error; err != nil {
+	if err := db.Exec("DROP TABLE IF EXISTS software_bids").Error; err != nil {
 		return err
 	}
-	if err := db.Exec("DROP TABLE IF EXISTS software_dev_services").Error; err != nil {
+	if err := db.Exec("DROP TABLE IF EXISTS software_services").Error; err != nil {
 		return err
 	}
 	if err := db.Exec("DROP TABLE IF EXISTS users").Error; err != nil {
@@ -60,12 +60,11 @@ func dropTablesInDatabase(db *gorm.DB) error {
 
 func seedDatabase(db *gorm.DB) error {
 	var count int64
-	db.Model(&ds.SoftwareDevService{}).Count(&count)
+	db.Model(&ds.SoftwareService{}).Count(&count)
 
 	if count == 0 {
-		initialServices := []ds.SoftwareDevService{
+		initialServices := []ds.SoftwareService{
 			{
-				ID:          1,
 				Image:       "web-project.png",
 				Title:       "Проектирование веб-приложения",
 				Description: "Профессиональная команда разработчиков спроектирует веб-приложение по Вашему техническому заданию!",
@@ -73,7 +72,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          2,
 				Image:       "desktop-project.png",
 				Title:       "Проектирование десктопного приложения",
 				Description: "Профессиональная команда разработчиков спроектирует десктопное приложение по Вашему техническому заданию!",
@@ -81,7 +79,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          3,
 				Image:       "mobile-project.png",
 				Title:       "Проектирование мобильного приложения",
 				Description: "Профессиональная команда разработчиков спроектирует мобильное приложение по Вашему техническому заданию!",
@@ -89,7 +86,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          4,
 				Image:       "web.png",
 				Title:       "Разработка веб-приложения",
 				Description: "Профессиональная команда разработчиков разработает веб-приложение по Вашему техническому заданию!",
@@ -97,7 +93,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          5,
 				Image:       "desktop.png",
 				Title:       "Разработка десктопного приложения",
 				Description: "Профессиональная команда разработчиков разработает десктопное приложение по Вашему техническому заданию!",
@@ -105,7 +100,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          6,
 				Image:       "mobile.png",
 				Title:       "Разработка мобильного приложения",
 				Description: "Профессиональная команда разработчиков разработает мобильное приложение по Вашему техническому заданию!",
@@ -113,7 +107,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          7,
 				Image:       "test.png",
 				Title:       "Тестирование десктопного, мобильного и веб-приложений",
 				Description: "Профессиональная команда разработчиков протестирует Ваше приложение на предмет наличия уязвимостей!",
@@ -121,7 +114,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          8,
 				Image:       "ui-ux.png",
 				Title:       "Проектирование UX/UI дизайна",
 				Description: "Профессиональная команда разработчиков разработает UX/UI дизайн для Вашего приложения по Вашему техническому заданию!",
@@ -129,7 +121,6 @@ func seedDatabase(db *gorm.DB) error {
 				Status:      true,
 			},
 			{
-				ID:          9,
 				Image:       "audit.png",
 				Title:       "Техническая консультация и аудит проекта",
 				Description: "Профессиональная команда разработчиков проконсультирует Вас по проекту и даст объективную и честную оценку!",
@@ -145,13 +136,13 @@ func seedDatabase(db *gorm.DB) error {
 		log.Printf("Successfully seeded database with %d services", len(initialServices))
 	}
 
-	db.Model(&ds.SoftwareDevBid{}).Count(&count)
+	db.Model(&ds.SoftwareBid{}).Count(&count)
 
 	if count == 0 {
-		initialBids := []ds.SoftwareDevBid{
+		initialBids := []ds.SoftwareBid{
 			{
 				Status:     "черновик",
-				DateCreate: time.Now(),
+				DateCreate: time.Now().Format("2006-01-02"),
 				CreatorID:  1,
 			},
 		}
@@ -171,19 +162,19 @@ func seedDatabase(db *gorm.DB) error {
 				ServiceID: 5,
 				BidID:     1,
 				Count:     1,
-				Index:     0,
+				Index:     1,
 			},
 			{
 				ServiceID: 7,
 				BidID:     1,
 				Count:     1,
-				Index:     1,
+				Index:     2,
 			},
 			{
 				ServiceID: 9,
 				BidID:     1,
 				Count:     1,
-				Index:     2,
+				Index:     3,
 			},
 		}
 

@@ -1,4 +1,4 @@
-module softwareDev
+module software
 
 go 1.24.6
 

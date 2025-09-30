@@ -3,8 +3,8 @@ package pkg
 import (
 	"fmt"
 
-	"softwareDev/internal/app/SoftwareDevServiceController"
-	"softwareDev/internal/app/config"
+	"software/internal/app/SoftwareController"
+	"software/internal/app/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -13,10 +13,10 @@ import (
 type Application struct {
 	Config     *config.Config
 	Router     *gin.Engine
-	Controller *SoftwareDevServiceController.SoftwareDevServiceController
+	Controller *SoftwareController.SoftwareController
 }
 
-func NewApp(config *config.Config, router *gin.Engine, controller *SoftwareDevServiceController.SoftwareDevServiceController) *Application {
+func NewApp(config *config.Config, router *gin.Engine, controller *SoftwareController.SoftwareController) *Application {
 	return &Application{
 		Config:     config,
 		Router:     router,

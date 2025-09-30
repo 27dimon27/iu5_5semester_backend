@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 
-	"softwareDev/internal/app/SoftwareDevServiceController"
-	"softwareDev/internal/app/SoftwareDevServiceDatabase"
-	"softwareDev/internal/app/config"
-	"softwareDev/internal/app/dsn"
-	"softwareDev/internal/pkg"
+	"software/internal/app/SoftwareController"
+	"software/internal/app/SoftwareDatabase"
+	"software/internal/app/config"
+	"software/internal/app/dsn"
+	"software/internal/pkg"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -25,12 +25,12 @@ func main() {
 	postgresString := dsn.FromEnv()
 	fmt.Println(postgresString)
 
-	rep, errRep := SoftwareDevServiceDatabase.NewSoftwareDevServiceDatabase(postgresString)
+	rep, errRep := SoftwareDatabase.NewSoftwareDatabase(postgresString)
 	if errRep != nil {
 		logrus.Fatalf("error initializing repository: %v", errRep)
 	}
 
-	hand := SoftwareDevServiceController.NewSoftwareDevServiceController(rep)
+	hand := SoftwareController.NewSoftwareController(rep)
 
 	application := pkg.NewApp(conf, router, hand)
 	application.RunApp()
