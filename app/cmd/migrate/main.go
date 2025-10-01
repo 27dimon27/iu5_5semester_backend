@@ -27,7 +27,7 @@ func main() {
 	err = db.AutoMigrate(
 		&ds.SoftwareService{},
 		&ds.SoftwareBid{},
-		&ds.Service_n_Bid{},
+		&ds.SoftwareService_n_SoftwareBid{},
 		&ds.Users{},
 	)
 	if err != nil {
@@ -41,7 +41,7 @@ func main() {
 }
 
 func dropTablesInDatabase(db *gorm.DB) error {
-	if err := db.Exec("DROP TABLE IF EXISTS service_n_bids").Error; err != nil {
+	if err := db.Exec("DROP TABLE IF EXISTS software_service_n_software_bids").Error; err != nil {
 		return err
 	}
 	if err := db.Exec("DROP TABLE IF EXISTS software_bids").Error; err != nil {
@@ -154,27 +154,27 @@ func seedDatabase(db *gorm.DB) error {
 		log.Printf("Successfully seeded database with %d bids", len(initialBids))
 	}
 
-	db.Model(&ds.Service_n_Bid{}).Count(&count)
+	db.Model(&ds.SoftwareService_n_SoftwareBid{}).Count(&count)
 
 	if count == 0 {
-		initialServiceBid := []ds.Service_n_Bid{
+		initialServiceBid := []ds.SoftwareService_n_SoftwareBid{
 			{
-				ServiceID: 5,
-				BidID:     1,
-				Count:     1,
-				Index:     1,
+				SoftwareServiceID: 5,
+				SoftwareBidID:     1,
+				Count:             1,
+				Index:             1,
 			},
 			{
-				ServiceID: 7,
-				BidID:     1,
-				Count:     1,
-				Index:     2,
+				SoftwareServiceID: 7,
+				SoftwareBidID:     1,
+				Count:             1,
+				Index:             2,
 			},
 			{
-				ServiceID: 9,
-				BidID:     1,
-				Count:     1,
-				Index:     3,
+				SoftwareServiceID: 9,
+				SoftwareBidID:     1,
+				Count:             1,
+				Index:             3,
 			},
 		}
 

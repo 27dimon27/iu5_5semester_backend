@@ -30,7 +30,7 @@ func (a *Application) RunApp() {
 	a.Controller.RegisterController(a.Router)
 	a.Controller.RegisterStatic(a.Router)
 
-	serverAddress := fmt.Sprintf("%s:%d", a.Config.ServiceHost, a.Config.ServicePort)
+	serverAddress := fmt.Sprintf("%s:%d", a.Config.Host, a.Config.Port)
 	if err := a.Router.Run(serverAddress); err != nil {
 		logrus.Fatal(err)
 	}

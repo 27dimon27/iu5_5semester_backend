@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"math"
+	"path/filepath"
 	"software/internal/app/SoftwareDatabase"
 	"software/internal/app/ds"
 
@@ -32,15 +33,15 @@ func (c *SoftwareController) RegisterController(router *gin.Engine) {
 	router.POST("/:softwareBidID/add-software/:softwareID", c.AddSoftwareServiceToBid)
 	router.POST("/software-bids/delete-software-bid/:softwareBidID", c.SoftDeleteSoftwareBid)
 
-	router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareServicesBid) // ВОЗМОЖНО СВЯЗАТЬ С /update-software-in-bid
+	router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareServicesBid)
 
 	router.GET("/api/softwares", c.GetAllSoftwareServices)
 	router.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
 	router.POST("/api/softwares", c.AddNewSoftware)
 	router.PUT("/api/softwares/:softwareID", c.UpdateSoftware)
-	router.DELETE("/api/softwares/:softwareID", c.DeleteSoftware) // добавить удаление фото
+	router.DELETE("/api/softwares/:softwareID", c.DeleteSoftwareWithPhoto)
 	router.POST("/api/add-software/:softwareID", c.AddSoftwareServiceToBidByID)
-	router.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService) // реализовать добавление фото
+	router.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService)
 
 	router.GET("/api/software-bids-icon", c.GetSoftwareServiceCountInBid)
 	router.GET("/api/software-bids", c.GetSoftwareBids)
@@ -74,19 +75,19 @@ func (c *SoftwareController) errorController(ctx *gin.Context, errorStatusCode i
 }
 
 func (c *SoftwareController) GetSoftwareServices(ctx *gin.Context) {
-	var services []ds.SoftwareService
+	var softwares []ds.SoftwareService
 	var bidCount []ds.SoftwareService
 	var bidID int
 	var err error
 
 	searchQuery := ctx.Query("software-search")
 	if searchQuery == "" {
-		services, err = c.SoftwareDatabase.GetSoftwareServices()
+		softwares, err = c.SoftwareDatabase.GetSoftwareServices()
 		if err != nil {
 			c.errorController(ctx, http.StatusInternalServerError, err)
 		}
 	} else {
-		services, err = c.SoftwareDatabase.GetSoftwareServicesByTitle(searchQuery)
+		softwares, err = c.SoftwareDatabase.GetSoftwareServicesByTitle(searchQuery)
 		if err != nil {
 			c.errorController(ctx, http.StatusInternalServerError, err)
 		}
@@ -95,7 +96,7 @@ func (c *SoftwareController) GetSoftwareServices(ctx *gin.Context) {
 	userID := c.SoftwareDatabase.SingletonGetCreator()
 	bidID, err = c.SoftwareDatabase.FindUserActiveBid(userID)
 
-	if err != nil {
+	if err != nil && err.Error() != "record not found" {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
 
@@ -107,7 +108,7 @@ func (c *SoftwareController) GetSoftwareServices(ctx *gin.Context) {
 	}
 
 	ctx.HTML(http.StatusOK, "MainPage.html", gin.H{
-		"services":       services,
+		"services":       softwares,
 		"softwareSearch": searchQuery,
 		"bidCount":       len(bidCount),
 		"bidID":          bidID,
@@ -121,19 +122,19 @@ func (c *SoftwareController) GetSoftwareService(ctx *gin.Context) {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
 
-	service, err := c.SoftwareDatabase.GetSoftwareService(id)
+	software, err := c.SoftwareDatabase.GetSoftwareService(id)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 	}
 
 	ctx.HTML(http.StatusOK, "ServicePage.html", gin.H{
-		"service": service,
+		"service": software,
 	})
 }
 
 func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 	var bid ds.SoftwareBid
-	var services []ds.SoftwareService
+	var softwares []ds.SoftwareService
 	var err error
 
 	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
@@ -144,12 +145,12 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 	// bidID := c.SoftwareDatabase.FindUserActiveBid(userID)
 
 	if bidID != 0 {
-		bid, services, err = c.SoftwareDatabase.GetSoftwareServicesBid(bidID)
+		bid, softwares, err = c.SoftwareDatabase.GetSoftwareServicesBid(bidID)
 		if err != nil {
 			c.errorController(ctx, http.StatusInternalServerError, err)
 		}
 
-		if len(services) == 0 {
+		if len(softwares) == 0 {
 			ctx.Redirect(http.StatusSeeOther, ctx.Request.Referer())
 			return
 		}
@@ -161,8 +162,8 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 	company := ctx.PostForm("company")
 
 	var countsIDs, gradesIDs []string
-	for _, service := range services {
-		id := strconv.Itoa(int(service.ID))
+	for _, software := range softwares {
+		id := strconv.Itoa(int(software.ID))
 		countsIDs = append(countsIDs, "count_"+id)
 		gradesIDs = append(gradesIDs, "grade_"+id)
 	}
@@ -186,7 +187,7 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 		grades = append(grades, strGrade)
 	}
 
-	allServices, err := c.SoftwareDatabase.GetSoftwareServices()
+	allSoftwares, err := c.SoftwareDatabase.GetSoftwareServices()
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 	}
@@ -200,18 +201,18 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 		coeffMap[coef.Level] = coef.Coeff
 	}
 
-	for idxService, service := range services {
-		for _, oneService := range allServices {
-			if service.ID == oneService.ID {
-				cur_sum = service.Price * float32(counts[idxService]) * coeffMap[grades[idxService]]
+	for idxSoftware, software := range softwares {
+		for _, oneSoftware := range allSoftwares {
+			if software.ID == oneSoftware.ID {
+				cur_sum = software.Price * float32(counts[idxSoftware]) * coeffMap[grades[idxSoftware]]
 				sums = append(sums, cur_sum)
 			}
 		}
 	}
 
 	var sum float32
-	for _, service_sum := range sums {
-		sum += service_sum
+	for _, software_sum := range sums {
+		sum += software_sum
 	}
 
 	var keyCoefs []string
@@ -219,16 +220,16 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 		keyCoefs = append(keyCoefs, coef.Level)
 	}
 
-	var servicesInBid []ds.ServiceInBid
+	var softwaresInBid []ds.SoftwareServiceInSoftwareBid
 
-	for idx := range services {
-		curServiceInBid := ds.ServiceInBid{
-			Service: services[idx],
-			Count:   counts[idx],
-			Grade:   grades[idx],
-			Sum:     int(math.Round(float64(sums[idx]))),
+	for idx := range softwares {
+		curSoftwareInBid := ds.SoftwareServiceInSoftwareBid{
+			SoftwareService: softwares[idx],
+			Count:           counts[idx],
+			Grade:           grades[idx],
+			Sum:             int(math.Round(float64(sums[idx]))),
 		}
-		servicesInBid = append(servicesInBid, curServiceInBid)
+		softwaresInBid = append(softwaresInBid, curSoftwareInBid)
 	}
 
 	companies := []string{
@@ -238,7 +239,7 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 	ctx.HTML(http.StatusOK, "BidPage.html", gin.H{
 		"bid":       bid,
 		"company":   company,
-		"services":  servicesInBid,
+		"services":  softwaresInBid,
 		"companies": companies,
 		"sum":       sum,
 		"keyCoefs":  keyCoefs,
@@ -247,7 +248,7 @@ func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
 }
 
 func (c *SoftwareController) AddSoftwareServiceToBid(ctx *gin.Context) {
-	serviceID, err := strconv.Atoi(ctx.Param("softwareID"))
+	softwareID, err := strconv.Atoi(ctx.Param("softwareID"))
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 	}
@@ -263,7 +264,7 @@ func (c *SoftwareController) AddSoftwareServiceToBid(ctx *gin.Context) {
 		bidID = c.SoftwareDatabase.CreateUserActiveBid(userID)
 	}
 
-	_, err = c.SoftwareDatabase.AddSoftwareServiceToBid(serviceID, bidID)
+	_, err = c.SoftwareDatabase.AddSoftwareServiceToBid(softwareID, bidID)
 	if err != nil {
 		if err.Error() == "duplicate" {
 			c.errorController(ctx, http.StatusBadRequest, err)
@@ -288,18 +289,18 @@ func (c *SoftwareController) SoftDeleteSoftwareBid(ctx *gin.Context) {
 }
 
 func (c *SoftwareController) GetAllSoftwareServices(ctx *gin.Context) {
-	var services []ds.SoftwareService
+	var softwares []ds.SoftwareService
 	var err error
 
 	searchQuery := ctx.Query("software-search")
 	if searchQuery == "" {
-		services, err = c.SoftwareDatabase.GetSoftwareServices()
+		softwares, err = c.SoftwareDatabase.GetSoftwareServices()
 		if err != nil {
 			c.errorController(ctx, http.StatusInternalServerError, err)
 			return
 		}
 	} else {
-		services, err = c.SoftwareDatabase.GetSoftwareServicesByTitle(searchQuery)
+		softwares, err = c.SoftwareDatabase.GetSoftwareServicesByTitle(searchQuery)
 		if err != nil {
 			c.errorController(ctx, http.StatusInternalServerError, err)
 			return
@@ -309,7 +310,7 @@ func (c *SoftwareController) GetAllSoftwareServices(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"success":   true,
 		"action":    "selection",
-		"softwares": services,
+		"softwares": softwares,
 	})
 }
 
@@ -321,7 +322,7 @@ func (c *SoftwareController) GetSoftwareServiceByID(ctx *gin.Context) {
 		return
 	}
 
-	service, err := c.SoftwareDatabase.GetSoftwareService(id)
+	software, err := c.SoftwareDatabase.GetSoftwareService(id)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
@@ -330,7 +331,7 @@ func (c *SoftwareController) GetSoftwareServiceByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"success":  true,
 		"action":   "selection",
-		"software": service,
+		"software": software,
 	})
 }
 
@@ -384,7 +385,7 @@ func (c *SoftwareController) UpdateSoftware(ctx *gin.Context) {
 	})
 }
 
-func (c *SoftwareController) DeleteSoftware(ctx *gin.Context) {
+func (c *SoftwareController) DeleteSoftwareWithPhoto(ctx *gin.Context) {
 	strSoftwareID := ctx.Param("softwareID")
 	softwareID, err := strconv.Atoi(strSoftwareID)
 	if err != nil {
@@ -392,7 +393,7 @@ func (c *SoftwareController) DeleteSoftware(ctx *gin.Context) {
 		return
 	}
 
-	softwareID, err = c.SoftwareDatabase.DeleteSoftware(softwareID)
+	softwareID, err = c.SoftwareDatabase.DeleteSoftwareWithPhoto(softwareID)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
@@ -445,11 +446,56 @@ func (c *SoftwareController) AddSoftwareServiceToBidByID(ctx *gin.Context) {
 }
 
 func (c *SoftwareController) AddPhotoToSoftwareService(ctx *gin.Context) {
+	type UploadPhotoRequest struct {
+		PhotoName string `form:"photo_name" binding:"required"`
+	}
 
+	var request UploadPhotoRequest
+
+	softwareID, err := strconv.Atoi(ctx.Param("softwareID"))
+	if err != nil {
+		c.errorController(ctx, http.StatusBadRequest, err)
+	}
+
+	if err := ctx.ShouldBind(&request); err != nil {
+		c.errorController(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		c.errorController(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	ext := filepath.Ext(file.Filename)
+	allowedExtensions := map[string]bool{
+		".jpg":  true,
+		".jpeg": true,
+		".png":  true,
+		".gif":  true,
+		".bmp":  true,
+	}
+
+	if !allowedExtensions[ext] {
+		c.errorController(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	photo, err := c.SoftwareDatabase.AddPhotoToSoftwareService(file, request.PhotoName, softwareID)
+	if err != nil {
+		c.errorController(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Photo uploaded successfully",
+		"photo":   photo,
+	})
 }
 
 func (c *SoftwareController) GetSoftwareServiceCountInBid(ctx *gin.Context) {
-	var services []ds.SoftwareService
+	var softwares []ds.SoftwareService
 
 	creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -458,7 +504,7 @@ func (c *SoftwareController) GetSoftwareServiceCountInBid(ctx *gin.Context) {
 		return
 	}
 
-	_, services, err = c.SoftwareDatabase.GetSoftwareServicesBid(bidID)
+	_, softwares, err = c.SoftwareDatabase.GetSoftwareServicesBid(bidID)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
@@ -466,7 +512,7 @@ func (c *SoftwareController) GetSoftwareServiceCountInBid(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"bidID": bidID,
-		"count": len(services),
+		"count": len(softwares),
 	})
 }
 
@@ -543,7 +589,7 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 }
 
 func (c *SoftwareController) FormateActiveSoftwareBid(ctx *gin.Context) {
-	var servicesInBid []ds.Service_n_Bid
+	var softwaresInBid []ds.SoftwareService_n_SoftwareBid
 
 	creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -552,14 +598,14 @@ func (c *SoftwareController) FormateActiveSoftwareBid(ctx *gin.Context) {
 		return
 	}
 
-	servicesInBid, err = c.SoftwareDatabase.CountServicesInBid(bidID)
+	softwaresInBid, err = c.SoftwareDatabase.CountServicesInBid(bidID)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
-	for _, service := range servicesInBid {
-		if service.Count == 0 {
+	for _, software := range softwaresInBid {
+		if software.Count == 0 {
 			c.errorController(ctx, http.StatusBadRequest, errors.New("count must be positive"))
 			return
 		}

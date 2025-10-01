@@ -1,5 +1,7 @@
 package ds
 
+import "time"
+
 type SoftwareService struct {
 	ID          int     `gorm:"primaryKey" json:"-"`
 	Image       string  `gorm:"type:text;default:null" json:"image,omitempty"`
@@ -20,15 +22,15 @@ type SoftwareBid struct {
 	ModeratorID int    `gorm:"default:null" json:"moderatorID,omitempty"`
 }
 
-type Service_n_Bid struct {
-	ID        int `gorm:"primaryKey" json:"-"`
-	ServiceID int `gorm:"not null;uniqueIndex:idx_service_bid" json:"serviceID"`
-	BidID     int `gorm:"not null;uniqueIndex:idx_service_bid" json:"-"`
-	Count     int `gorm:"not null;default:1" json:"count,omitempty"`
-	Index     int `gorm:"not null" json:"index,omitempty"`
+type SoftwareService_n_SoftwareBid struct {
+	ID                int `gorm:"primaryKey" json:"-"`
+	SoftwareServiceID int `gorm:"not null;uniqueIndex:idx_software" json:"softwareID"`
+	SoftwareBidID     int `gorm:"not null;uniqueIndex:idx_software" json:"-"`
+	Count             int `gorm:"not null;default:1" json:"count,omitempty"`
+	Index             int `gorm:"not null" json:"index,omitempty"`
 
-	Service SoftwareService `gorm:"foreignKey:ServiceID"`
-	Bid     SoftwareBid     `gorm:"foreignKey:BidID"`
+	SoftwareService SoftwareService `gorm:"foreignKey:SoftwareServiceID"`
+	SoftwareBid     SoftwareBid     `gorm:"foreignKey:SoftwareBidID"`
 }
 
 type Users struct {
@@ -43,15 +45,22 @@ type Coefficients struct {
 	Coeff float32
 }
 
-type ServiceInBid struct {
-	Service SoftwareService
-	Count   int
-	Grade   string
-	Sum     int
+type SoftwareServiceInSoftwareBid struct {
+	SoftwareService SoftwareService
+	Count           int
+	Grade           string
+	Sum             int
 }
 
 type FilterRequest struct {
 	StartDate string `json:"start_date,omitempty"`
 	EndDate   string `json:"end_date,omitempty"`
 	Status    string `json:"status,omitempty"`
+}
+
+type Photo struct {
+	Name      string    `json:"name"`
+	Size      int64     `json:"size"`
+	URL       string    `json:"url"`
+	CreatedAt time.Time `json:"created_at"`
 }

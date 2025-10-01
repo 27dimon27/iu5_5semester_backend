@@ -26,14 +26,14 @@
             <p class="titles-price">Стоимость</p>
         </div>
         {{ range .services }}
-        <input type="hidden" name="service_id[]" value="{{ .Service.ID }}">
+        <input type="hidden" name="service_id[]" value="{{ .SoftwareService.ID }}">
         <div class="service-row">
             <div class="service-icon">
-                <img src="http://localhost:9000/software-images/{{ .Service.Image }}" />
+                <img src="http://localhost:9000/software-images/{{ .SoftwareService.Image }}" />
             </div>
-            <div class="service-title">{{ .Service.Title }}</div>
-            <input class="service-count" id="service-count-{{ .Service.ID }}" type="number" name="count_{{ .Service.ID }}" value="{{ .Count }}" min="1" max="100"/>
-            <select class="service-grade" id="service-grade" name="grade_{{ .Service.ID }}">
+            <div class="service-title">{{ .SoftwareService.Title }}</div>
+            <input class="service-count" id="service-count-{{ .SoftwareService.ID }}" type="number" name="count_{{ .SoftwareService.ID }}" value="{{ .Count }}" min="1" max="100"/>
+            <select class="service-grade" id="service-grade" name="grade_{{ .SoftwareService.ID }}">
                 {{ $outer := .Grade }}
                 {{ range $.keyCoefs }}
                 <option value="{{ . }}" {{ if eq . $outer }}selected{{ end }}>{{ . }}</option>
