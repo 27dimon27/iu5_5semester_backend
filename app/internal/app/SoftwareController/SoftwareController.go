@@ -68,7 +68,6 @@ func (c *SoftwareController) RegisterStatic(router *gin.Engine) {
 func (c *SoftwareController) errorController(ctx *gin.Context, errorStatusCode int, err error) {
 	logrus.Error(err.Error())
 	ctx.JSON(errorStatusCode, gin.H{
-		"status":      "error",
 		"description": err.Error(),
 	})
 }
@@ -364,15 +363,14 @@ func (c *SoftwareController) UpdateSoftware(ctx *gin.Context) {
 		return
 	}
 
-	softwareID, err = c.SoftwareDatabase.UpdateSoftware(softwareID, software)
+	software, err = c.SoftwareDatabase.UpdateSoftware(softwareID, software)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"softwareID":      softwareID,
-		"updatedSoftware": software,
+		"software": software,
 	})
 }
 
@@ -561,15 +559,14 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 		return
 	}
 
-	bidID, err = c.SoftwareDatabase.UpdateActiveSoftwareBid(bidID, bid)
+	bid, err = c.SoftwareDatabase.UpdateActiveSoftwareBid(bidID, bid)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"bidID": bidID,
-		"bid":   bid,
+		"bid": bid,
 	})
 }
 
@@ -676,7 +673,7 @@ func (c *SoftwareController) DeleteSoftwareFromBid(ctx *gin.Context) {
 }
 
 func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
-	softwareInBid := ds.SoftwareService_n_SoftwareBid{} // ПРОТЕСТИРОВАТЬ НОВЫЙ ВАРИК
+	softwareInBid := ds.SoftwareService_n_SoftwareBid{}
 
 	err := ctx.ShouldBindJSON(&softwareInBid)
 	if err != nil {
@@ -691,14 +688,14 @@ func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
 		return
 	}
 
-	err = c.SoftwareDatabase.UpdateSoftwareInBid(bidID, softwareInBid)
+	bid, err := c.SoftwareDatabase.UpdateSoftwareInBid(bidID, softwareInBid)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"bidID": bidID,
+		"bid": bid,
 	})
 }
 
@@ -755,14 +752,14 @@ func (c *SoftwareController) UpdateUserAccountData(ctx *gin.Context) {
 		return
 	}
 
-	err = c.SoftwareDatabase.UpdateUserAccountData(userID, updateUser)
+	user, err := c.SoftwareDatabase.UpdateUserAccountData(userID, updateUser)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"userID": userID,
+		"user": user,
 	})
 }
 
@@ -810,3 +807,5 @@ func (c *SoftwareController) DeauthorizeUser(ctx *gin.Context) {
 		"userID": userID,
 	})
 }
+
+// ПРОТЕСТИРОВАТЬ НОВЫЕ ВАРИКИ РУЧЕК С НОВЫМИ ВОЗВРАТАМИ (УСЛУГИ, ЗАЯВКИ, ЮЗЕРЫ, И Т.Д.)

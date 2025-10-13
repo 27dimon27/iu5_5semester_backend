@@ -253,12 +253,12 @@ func (d *SoftwareDatabase) AddNewSoftware(software ds.SoftwareService) error {
 	return result.Error
 }
 
-func (d *SoftwareDatabase) UpdateSoftware(softwareID int, software ds.SoftwareService) (int, error) {
-	result := d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Updates(software)
+func (d *SoftwareDatabase) UpdateSoftware(softwareID int, software ds.SoftwareService) (ds.SoftwareService, error) {
+	result := d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Updates(software).First(&software)
 	if result.Error != nil {
-		return 0, result.Error
+		return ds.SoftwareService{}, result.Error
 	}
-	return softwareID, nil
+	return software, nil
 }
 
 func (d *SoftwareDatabase) GetSoftwareBids(userID int, filter ds.FilterRequest) ([]ds.SoftwareBid, error) {
@@ -286,12 +286,12 @@ func (d *SoftwareDatabase) GetSoftwareBids(userID int, filter ds.FilterRequest) 
 	return bids, nil
 }
 
-func (d *SoftwareDatabase) UpdateActiveSoftwareBid(bidID int, bid ds.SoftwareBid) (int, error) {
-	result := d.db.Where("id = ?", bidID).Updates(bid)
+func (d *SoftwareDatabase) UpdateActiveSoftwareBid(bidID int, bid ds.SoftwareBid) (ds.SoftwareBid, error) {
+	result := d.db.Where("id = ?", bidID).Updates(bid).First(&bid)
 	if result.Error != nil {
-		return 0, result.Error
+		return ds.SoftwareBid{}, result.Error
 	}
-	return bidID, nil
+	return bid, nil
 }
 
 func (d *SoftwareDatabase) CountServicesInBid(bidID int) ([]ds.SoftwareService_n_SoftwareBid, error) {
@@ -397,12 +397,16 @@ func (d *SoftwareDatabase) AddSoftwareServiceToBid(softwareID int, bidID int) (b
 		return false, errors.New("duplicate")
 	}
 
+	var software ds.SoftwareService
+	d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).First(&software)
+
 	_, bidSize, _ := d.GetSoftwareServicesBid(bidID)
 	dataToAdd := ds.SoftwareService_n_SoftwareBid{
 		SoftwareServiceID: softwareID,
 		SoftwareBidID:     bidID,
 		Count:             1,
 		Index:             len(bidSize) + 1,
+		Price:             int(software.Price),
 	}
 
 	result := d.db.Create(&dataToAdd)
@@ -480,12 +484,13 @@ func (d *SoftwareDatabase) DeleteSoftwareFromBid(bidID, SoftwareID int) error {
 	return result.Error
 }
 
-func (d *SoftwareDatabase) UpdateSoftwareInBid(bidID int, software ds.SoftwareService_n_SoftwareBid) error {
-	result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software.SoftwareServiceID).Update("count", software.Count)
+func (d *SoftwareDatabase) UpdateSoftwareInBid(bidID int, software ds.SoftwareService_n_SoftwareBid) (ds.SoftwareService_n_SoftwareBid, error) {
+	var bid ds.SoftwareService_n_SoftwareBid
+	result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software.SoftwareServiceID).Update("count", software.Count).First(&bid)
 	if result.Error != nil {
-		return result.Error
+		return ds.SoftwareService_n_SoftwareBid{}, result.Error
 	}
-	return nil
+	return bid, nil
 }
 
 func (d *SoftwareDatabase) RegisterNewUser(userData ds.Users) error {
@@ -502,20 +507,20 @@ func (d *SoftwareDatabase) GetUserAccountData(userID int) (ds.Users, error) {
 	return user, nil
 }
 
-func (d *SoftwareDatabase) UpdateUserAccountData(userID int, updateUser ds.Users) error {
+func (d *SoftwareDatabase) UpdateUserAccountData(userID int, updateUser ds.Users) (ds.Users, error) {
 	var doubleUser ds.Users
 	result := d.db.Where("login = ?", updateUser.Login).First(&doubleUser)
 	if result.RowsAffected != 0 {
-		return errors.New("duplicate username")
+		return ds.Users{}, errors.New("duplicate username")
 	}
-	result = d.db.Where("id = ?", userID).Updates(updateUser)
+	result = d.db.Where("id = ?", userID).Updates(updateUser).First(&updateUser)
 	if result.Error != nil {
-		return result.Error
+		return ds.Users{}, result.Error
 	}
 	if result.RowsAffected == 0 {
-		return errors.New("user not found")
+		return ds.Users{}, errors.New("user not found")
 	}
-	return result.Error
+	return updateUser, result.Error
 }
 
 func (d *SoftwareDatabase) AuthenticateUser(username, password string) (ds.Users, error) {
