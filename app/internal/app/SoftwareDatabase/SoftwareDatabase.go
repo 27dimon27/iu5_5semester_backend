@@ -218,7 +218,7 @@ func (d *SoftwareDatabase) DeletePhotoFromMinio(objectName string) error {
 
 func (d *SoftwareDatabase) GetSoftwareServices() ([]ds.SoftwareService, error) {
 	var softwares []ds.SoftwareService
-	err := d.db.Find(&softwares).Error
+	err := d.db.Where("status = ?", true).Find(&softwares).Error
 
 	if err != nil {
 		return nil, err
@@ -241,23 +241,20 @@ func (d *SoftwareDatabase) GetSoftwareService(id int) (ds.SoftwareService, error
 
 func (d *SoftwareDatabase) GetSoftwareServicesByTitle(title string) ([]ds.SoftwareService, error) {
 	var softwares []ds.SoftwareService
-	err := d.db.Where("title ILIKE ?", "%"+title+"%").Find(&softwares).Error
+	err := d.db.Where("status = ? AND title ILIKE ?", true, "%"+title+"%").Find(&softwares).Error
 	if err != nil {
 		return nil, err
 	}
 	return softwares, nil
 }
 
-func (d *SoftwareDatabase) AddNewSoftware(software ds.SoftwareService) (int, error) {
+func (d *SoftwareDatabase) AddNewSoftware(software ds.SoftwareService) error {
 	result := d.db.Create(&software)
-	if result.Error != nil {
-		return 0, result.Error
-	}
-	return software.ID, nil
+	return result.Error
 }
 
 func (d *SoftwareDatabase) UpdateSoftware(softwareID int, software ds.SoftwareService) (int, error) {
-	result := d.db.Where("id = ?", softwareID).Updates(software)
+	result := d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Updates(software)
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -268,6 +265,7 @@ func (d *SoftwareDatabase) GetSoftwareBids(userID int, filter ds.FilterRequest) 
 	var bids []ds.SoftwareBid
 
 	query := d.db.Model(&ds.SoftwareBid{})
+	query = query.Where("status NOT IN ('черновик', 'удалён')")
 
 	if filter.StartDate != "" {
 		query = query.Where("date_create >= ?", filter.StartDate)
@@ -316,26 +314,41 @@ func (d *SoftwareDatabase) FormateActiveSoftwareBid(bidID int) (int, error) {
 	return bidID, nil
 }
 
-func (d *SoftwareDatabase) ModerateSoftwareBid(bidID int, approved bool) (int, error) {
+func (d *SoftwareDatabase) ModerateSoftwareBid(bidID int, approved bool) (int, int, error) {
 	newStatus := "отклонён"
 	if approved {
 		newStatus = "завершён"
 	}
+
+	var bid ds.SoftwareBid
+
 	result := d.db.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Update("status", newStatus)
 	if result.Error != nil {
-		return 0, result.Error
+		return 0, 0, result.Error
 	} else if result.RowsAffected == 0 {
-		return 0, errors.New("bid not found")
+		return 0, 0, errors.New("bid not found")
 	}
-	return bidID, nil
+
+	result = d.db.Preload("Softwares.SoftwareService").First(&bid)
+	if result.Error != nil {
+		return 0, 0, result.Error
+	}
+
+	var sum int
+	softwares := bid.Softwares
+	for _, item := range softwares {
+		sum += item.Price
+	}
+
+	return bidID, sum, nil
 }
 
 func (d *SoftwareDatabase) DeleteSoftwareBid(bidId int) (int, error) {
-	result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ?", bidId).Delete(&ds.SoftwareService_n_SoftwareBid{})
-	if result.Error != nil {
-		return 0, result.Error
-	}
-	result = d.db.Model(&ds.SoftwareBid{}).Where("id = ?", bidId).Delete(&ds.SoftwareBid{})
+	// result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ?", bidId).Delete(&ds.SoftwareService_n_SoftwareBid{})
+	// if result.Error != nil {
+	// 	return 0, result.Error
+	// }
+	result := d.db.Model(&ds.SoftwareBid{}).Where("id = ?", bidId).Update("status", "удалён")
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -439,7 +452,7 @@ func (d *SoftwareDatabase) DeleteSoftwareWithPhoto(SoftwareID int) (int, error) 
 		return 0, result.Error
 	}
 
-	result = d.db.Model(&ds.SoftwareService{}).Where("id = ?", SoftwareID).Delete(&ds.SoftwareService{})
+	result = d.db.Model(&ds.SoftwareService{}).Where("id = ?", SoftwareID).Update("status", false).Update("image", "")
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -452,7 +465,7 @@ func (d *SoftwareDatabase) DeleteSoftwareWithPhoto(SoftwareID int) (int, error) 
 
 func (d *SoftwareDatabase) GetSoftwareBidByID(bidID int) (ds.SoftwareBid, error) {
 	var bid ds.SoftwareBid
-	result := d.db.Where("id = ?", bidID).First(&bid)
+	result := d.db.Preload("Softwares.SoftwareService").First(&bid, bidID)
 	if result.Error != nil {
 		return ds.SoftwareBid{}, result.Error
 	}
@@ -467,39 +480,11 @@ func (d *SoftwareDatabase) DeleteSoftwareFromBid(bidID, SoftwareID int) error {
 	return result.Error
 }
 
-func (d *SoftwareDatabase) UpdateSoftwareInBid(bidID int, softwares []map[string]int) error {
-	lenSoftwares := len(softwares)
-
-	if lenSoftwares > 2 {
-		return errors.New("too many values")
+func (d *SoftwareDatabase) UpdateSoftwareInBid(bidID int, software ds.SoftwareService_n_SoftwareBid) error {
+	result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software.SoftwareServiceID).Update("count", software.Count)
+	if result.Error != nil {
+		return result.Error
 	}
-
-	var result *gorm.DB
-
-	switch lenSoftwares {
-	case 1:
-		software := softwares[0]
-		result = d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software["softwareID"]).Update("count", software["count"])
-		if result.Error != nil {
-			return result.Error
-		}
-	case 2:
-		if softwares[0]["index"] == softwares[1]["index"] {
-			return errors.New("duplicated index")
-		}
-
-		for _, software := range softwares {
-			updates := map[string]any{
-				"index": software["index"],
-				"count": software["count"],
-			}
-			result = d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software["softwareID"]).Updates(updates)
-			if result.Error != nil {
-				return result.Error
-			}
-		}
-	}
-
 	return nil
 }
 

@@ -60,6 +60,30 @@ func dropTablesInDatabase(db *gorm.DB) error {
 
 func seedDatabase(db *gorm.DB) error {
 	var count int64
+
+	db.Model(&ds.Users{}).Count(&count)
+
+	if count == 0 {
+		initialUsers := []ds.Users{
+			{
+				Login:       "user",
+				Password:    "user",
+				IsModerator: false,
+			},
+			{
+				Login:       "admin",
+				Password:    "admin",
+				IsModerator: true,
+			},
+		}
+
+		result := db.Create(&initialUsers)
+		if result.Error != nil {
+			return result.Error
+		}
+		log.Printf("Successfully seeded database with %d users", len(initialUsers))
+	}
+
 	db.Model(&ds.SoftwareService{}).Count(&count)
 
 	if count == 0 {
@@ -163,18 +187,21 @@ func seedDatabase(db *gorm.DB) error {
 				SoftwareBidID:     1,
 				Count:             1,
 				Index:             1,
+				Price:             45_000,
 			},
 			{
 				SoftwareServiceID: 7,
 				SoftwareBidID:     1,
 				Count:             1,
 				Index:             2,
+				Price:             2_500,
 			},
 			{
 				SoftwareServiceID: 9,
 				SoftwareBidID:     1,
 				Count:             1,
 				Index:             3,
+				Price:             3_500,
 			},
 		}
 
@@ -183,29 +210,6 @@ func seedDatabase(db *gorm.DB) error {
 			return result.Error
 		}
 		log.Printf("Successfully seeded database with %d service-&-bid", len(initialServiceBid))
-	}
-
-	db.Model(&ds.Users{}).Count(&count)
-
-	if count == 0 {
-		initialUsers := []ds.Users{
-			{
-				Login:       "user",
-				Password:    "user",
-				IsModerator: false,
-			},
-			{
-				Login:       "admin",
-				Password:    "admin",
-				IsModerator: true,
-			},
-		}
-
-		result := db.Create(&initialUsers)
-		if result.Error != nil {
-			return result.Error
-		}
-		log.Printf("Successfully seeded database with %d users", len(initialUsers))
 	}
 
 	return nil

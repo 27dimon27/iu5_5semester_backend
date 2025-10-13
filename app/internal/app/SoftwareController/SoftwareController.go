@@ -26,14 +26,13 @@ func NewSoftwareController(d *SoftwareDatabase.SoftwareDatabase) *SoftwareContro
 }
 
 func (c *SoftwareController) RegisterController(router *gin.Engine) {
-	router.GET("/softwares", c.GetSoftwareServices)
-	router.GET("/softwares/:softwareID", c.GetSoftwareService)
-	router.GET("/software-bids/:softwareBidID", c.GetSoftwareServicesBid)
+	// router.GET("/softwares", c.GetSoftwareServices)
+	// router.GET("/softwares/:softwareID", c.GetSoftwareService)
+	// router.GET("/software-bids/:softwareBidID", c.GetSoftwareServicesBid)
+	// router.POST("/:softwareBidID/add-software/:softwareID", c.AddSoftwareServiceToBid)
+	// router.POST("/software-bids/delete-software-bid/:softwareBidID", c.SoftDeleteSoftwareBid)
 
-	router.POST("/:softwareBidID/add-software/:softwareID", c.AddSoftwareServiceToBid)
-	router.POST("/software-bids/delete-software-bid/:softwareBidID", c.SoftDeleteSoftwareBid)
-
-	router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareServicesBid)
+	// router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareServicesBid)
 
 	router.GET("/api/softwares", c.GetAllSoftwareServices)
 	router.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
@@ -308,8 +307,6 @@ func (c *SoftwareController) GetAllSoftwareServices(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"action":    "selection",
 		"softwares": softwares,
 	})
 }
@@ -329,31 +326,26 @@ func (c *SoftwareController) GetSoftwareServiceByID(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"action":   "selection",
 		"software": software,
 	})
 }
 
 func (c *SoftwareController) AddNewSoftware(ctx *gin.Context) {
 	software := ds.SoftwareService{}
-	softwareID := 0
 	err := ctx.ShouldBindJSON(&software)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	softwareID, err = c.SoftwareDatabase.AddNewSoftware(software)
+	err = c.SoftwareDatabase.AddNewSoftware(software)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"action":     "insert",
-		"softwareID": softwareID,
+		"software": software,
 	})
 }
 
@@ -379,9 +371,8 @@ func (c *SoftwareController) UpdateSoftware(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"action":     "update",
-		"softwareID": softwareID,
+		"softwareID":      softwareID,
+		"updatedSoftware": software,
 	})
 }
 
@@ -400,8 +391,6 @@ func (c *SoftwareController) DeleteSoftwareWithPhoto(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"action":     "delete",
 		"softwareID": softwareID,
 	})
 }
@@ -438,8 +427,6 @@ func (c *SoftwareController) AddSoftwareServiceToBidByID(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"action":     "insert in bid",
 		"softwareID": softwareID,
 		"bidID":      bidID,
 	})
@@ -489,8 +476,7 @@ func (c *SoftwareController) AddPhotoToSoftwareService(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Photo uploaded successfully",
-		"photo":   photo,
+		"photo": photo,
 	})
 }
 
@@ -582,9 +568,8 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "update",
-		"bidID":   bidID,
+		"bidID": bidID,
+		"bid":   bid,
 	})
 }
 
@@ -618,9 +603,7 @@ func (c *SoftwareController) FormateActiveSoftwareBid(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "formate",
-		"bidID":   bidID,
+		"bidID": bidID,
 	})
 }
 
@@ -636,16 +619,15 @@ func (c *SoftwareController) ModerateSoftwareBid(ctx *gin.Context) {
 		approved = true
 	}
 
-	bidID, err = c.SoftwareDatabase.ModerateSoftwareBid(bidID, approved)
+	bidID, cost, err := c.SoftwareDatabase.ModerateSoftwareBid(bidID, approved)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "moderate",
-		"bidID":   bidID,
+		"cost":  cost,
+		"bidID": bidID,
 	})
 }
 
@@ -663,9 +645,7 @@ func (c *SoftwareController) DeleteSoftwareBid(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "delete",
-		"bidID":   bidID,
+		"bidID": bidID,
 	})
 }
 
@@ -690,17 +670,15 @@ func (c *SoftwareController) DeleteSoftwareFromBid(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":    true,
-		"action":     "delete",
 		"bidID":      bidID,
 		"softwareID": softwareID,
 	})
 }
 
 func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
-	softwaresInBid := []map[string]int{}
+	softwareInBid := ds.SoftwareService_n_SoftwareBid{} // ПРОТЕСТИРОВАТЬ НОВЫЙ ВАРИК
 
-	err := ctx.ShouldBindJSON(&softwaresInBid)
+	err := ctx.ShouldBindJSON(&softwareInBid)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 		return
@@ -713,16 +691,14 @@ func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
 		return
 	}
 
-	err = c.SoftwareDatabase.UpdateSoftwareInBid(bidID, softwaresInBid)
+	err = c.SoftwareDatabase.UpdateSoftwareInBid(bidID, softwareInBid)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "update",
-		"bidID":   bidID,
+		"bidID": bidID,
 	})
 }
 
@@ -742,8 +718,6 @@ func (c *SoftwareController) RegisterNewUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"action":   "create",
 		"username": newUser.Login,
 	})
 }
@@ -762,8 +736,6 @@ func (c *SoftwareController) GetUserAccountData(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"action":   "select",
 		"userData": userData,
 	})
 }
@@ -790,9 +762,7 @@ func (c *SoftwareController) UpdateUserAccountData(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "update",
-		"userID":  userID,
+		"userID": userID,
 	})
 }
 
@@ -819,9 +789,7 @@ func (c *SoftwareController) AuthenticateUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "authenticate",
-		"user":    foundUser,
+		"user": foundUser,
 	})
 }
 
@@ -839,8 +807,6 @@ func (c *SoftwareController) DeauthorizeUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"action":  "deauthorize",
-		"userID":  userID,
+		"userID": userID,
 	})
 }
