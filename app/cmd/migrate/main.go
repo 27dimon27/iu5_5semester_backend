@@ -68,11 +68,13 @@ func seedDatabase(db *gorm.DB) error {
 			{
 				Login:       "user",
 				Password:    "user",
+				Role:        "user",
 				IsModerator: false,
 			},
 			{
 				Login:       "admin",
 				Password:    "admin",
+				Role:        "admin",
 				IsModerator: true,
 			},
 		}

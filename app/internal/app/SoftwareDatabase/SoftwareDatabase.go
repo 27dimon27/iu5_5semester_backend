@@ -10,6 +10,7 @@ import (
 
 	"software/internal/app/config"
 	"software/internal/app/ds"
+	"software/internal/app/redis"
 
 	"github.com/minio/minio-go/v7"
 	"gorm.io/driver/postgres"
@@ -17,8 +18,9 @@ import (
 )
 
 type SoftwareDatabase struct {
-	db     *gorm.DB
-	client *minio.Client
+	DB          *gorm.DB
+	Client      *minio.Client
+	RedisClient *redis.Client
 }
 
 func NewSoftwareAndPhotoDatabase(dsn string) (*SoftwareDatabase, error) {
@@ -32,9 +34,15 @@ func NewSoftwareAndPhotoDatabase(dsn string) (*SoftwareDatabase, error) {
 		return nil, err
 	}
 
+	redisClient, err := redis.New(context.Background(), config.RedisClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	return &SoftwareDatabase{
-		db:     db,
-		client: client,
+		DB:          db,
+		Client:      client,
+		RedisClient: redisClient,
 	}, nil
 }
 
@@ -76,7 +84,7 @@ func (d *SoftwareDatabase) SingletonGetCreator() int {
 
 func (d *SoftwareDatabase) AddPhotoToSoftwareService(file *multipart.FileHeader, photoName string, softwareID int) (*ds.Photo, error) {
 	var software ds.SoftwareService
-	result := d.db.Where("id = ?", softwareID).First(&software)
+	result := d.DB.Where("id = ?", softwareID).First(&software)
 	if result.RowsAffected == 0 {
 		return nil, errors.New("software not found")
 	}
@@ -87,7 +95,7 @@ func (d *SoftwareDatabase) AddPhotoToSoftwareService(file *multipart.FileHeader,
 	ctx := context.Background()
 
 	if software.Image != "" {
-		err := d.client.RemoveObject(ctx, config.MinioClientConfig.Bucket, software.Image, minio.RemoveObjectOptions{})
+		err := d.Client.RemoveObject(ctx, config.MinioClientConfig.Bucket, software.Image, minio.RemoveObjectOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to remove existing file: %v", err)
 		}
@@ -113,7 +121,7 @@ func (d *SoftwareDatabase) AddPhotoToSoftwareService(file *multipart.FileHeader,
 		contentType = "application/octet-stream"
 	}
 
-	_, err = d.client.PutObject(
+	_, err = d.Client.PutObject(
 		context.Background(),
 		config.MinioClientConfig.Bucket,
 		photoName,
@@ -154,7 +162,7 @@ func (d *SoftwareDatabase) AddPhotoToSoftwareService(file *multipart.FileHeader,
 	}
 
 	if software.Image == "" {
-		result = d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Update("image", photoName)
+		result = d.DB.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Update("image", photoName)
 		if result.Error != nil {
 			return nil, result.Error
 		}
@@ -164,7 +172,7 @@ func (d *SoftwareDatabase) AddPhotoToSoftwareService(file *multipart.FileHeader,
 }
 
 func (d *SoftwareDatabase) checkObjectExists(objectName string) (bool, error) {
-	_, err := d.client.StatObject(
+	_, err := d.Client.StatObject(
 		context.Background(),
 		config.MinioClientConfig.Bucket,
 		objectName,
@@ -184,7 +192,7 @@ func (d *SoftwareDatabase) checkObjectExists(objectName string) (bool, error) {
 }
 
 func (d *SoftwareDatabase) verifyUpload(objectName string, expectedSize int64) (bool, error) {
-	info, err := d.client.StatObject(
+	info, err := d.Client.StatObject(
 		context.Background(),
 		config.MinioClientConfig.Bucket,
 		objectName,
@@ -207,7 +215,7 @@ func (d *SoftwareDatabase) verifyUpload(objectName string, expectedSize int64) (
 }
 
 func (d *SoftwareDatabase) DeletePhotoFromMinio(objectName string) error {
-	err := d.client.RemoveObject(
+	err := d.Client.RemoveObject(
 		context.Background(),
 		config.MinioClientConfig.Bucket,
 		objectName,
@@ -218,7 +226,7 @@ func (d *SoftwareDatabase) DeletePhotoFromMinio(objectName string) error {
 
 func (d *SoftwareDatabase) GetSoftwareServices() ([]ds.SoftwareService, error) {
 	var softwares []ds.SoftwareService
-	err := d.db.Where("status = ?", true).Find(&softwares).Error
+	err := d.DB.Where("status = ?", true).Find(&softwares).Error
 
 	if err != nil {
 		return nil, err
@@ -232,7 +240,7 @@ func (d *SoftwareDatabase) GetSoftwareServices() ([]ds.SoftwareService, error) {
 
 func (d *SoftwareDatabase) GetSoftwareService(id int) (ds.SoftwareService, error) {
 	software := ds.SoftwareService{}
-	err := d.db.Where("id = ?", id).First(&software).Error
+	err := d.DB.Where("id = ?", id).First(&software).Error
 	if err != nil {
 		return ds.SoftwareService{}, err
 	}
@@ -241,7 +249,7 @@ func (d *SoftwareDatabase) GetSoftwareService(id int) (ds.SoftwareService, error
 
 func (d *SoftwareDatabase) GetSoftwareServicesByTitle(title string) ([]ds.SoftwareService, error) {
 	var softwares []ds.SoftwareService
-	err := d.db.Where("status = ? AND title ILIKE ?", true, "%"+title+"%").Find(&softwares).Error
+	err := d.DB.Where("status = ? AND title ILIKE ?", true, "%"+title+"%").Find(&softwares).Error
 	if err != nil {
 		return nil, err
 	}
@@ -249,12 +257,12 @@ func (d *SoftwareDatabase) GetSoftwareServicesByTitle(title string) ([]ds.Softwa
 }
 
 func (d *SoftwareDatabase) AddNewSoftware(software ds.SoftwareService) error {
-	result := d.db.Create(&software)
+	result := d.DB.Create(&software)
 	return result.Error
 }
 
 func (d *SoftwareDatabase) UpdateSoftware(softwareID int, software ds.SoftwareService) (ds.SoftwareService, error) {
-	result := d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Updates(software).First(&software)
+	result := d.DB.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).Updates(software).First(&software)
 	if result.Error != nil {
 		return ds.SoftwareService{}, result.Error
 	}
@@ -264,7 +272,7 @@ func (d *SoftwareDatabase) UpdateSoftware(softwareID int, software ds.SoftwareSe
 func (d *SoftwareDatabase) GetSoftwareBids(userID int, filter ds.FilterRequest) ([]ds.SoftwareBid, error) {
 	var bids []ds.SoftwareBid
 
-	query := d.db.Model(&ds.SoftwareBid{})
+	query := d.DB.Model(&ds.SoftwareBid{})
 	query = query.Where("status NOT IN ('черновик', 'удалён')")
 
 	if filter.StartDate != "" {
@@ -287,7 +295,7 @@ func (d *SoftwareDatabase) GetSoftwareBids(userID int, filter ds.FilterRequest) 
 }
 
 func (d *SoftwareDatabase) UpdateActiveSoftwareBid(bidID int, bid ds.SoftwareBid) (ds.SoftwareBid, error) {
-	result := d.db.Where("id = ?", bidID).Updates(bid).First(&bid)
+	result := d.DB.Where("id = ?", bidID).Updates(bid).First(&bid)
 	if result.Error != nil {
 		return ds.SoftwareBid{}, result.Error
 	}
@@ -296,7 +304,7 @@ func (d *SoftwareDatabase) UpdateActiveSoftwareBid(bidID int, bid ds.SoftwareBid
 
 func (d *SoftwareDatabase) CountServicesInBid(bidID int) ([]ds.SoftwareService_n_SoftwareBid, error) {
 	var softwaresInBid []ds.SoftwareService_n_SoftwareBid
-	result := d.db.Where("software_bid_id = ?", bidID).Find(&softwaresInBid)
+	result := d.DB.Where("software_bid_id = ?", bidID).Find(&softwaresInBid)
 	if result.Error != nil {
 		return []ds.SoftwareService_n_SoftwareBid{}, result.Error
 	}
@@ -304,7 +312,7 @@ func (d *SoftwareDatabase) CountServicesInBid(bidID int) ([]ds.SoftwareService_n
 }
 
 func (d *SoftwareDatabase) FormateActiveSoftwareBid(bidID int) (int, error) {
-	result := d.db.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Updates(map[string]any{
+	result := d.DB.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Updates(map[string]any{
 		"date_update": time.Now(),
 		"status":      "сформирован",
 	})
@@ -322,14 +330,14 @@ func (d *SoftwareDatabase) ModerateSoftwareBid(bidID int, approved bool) (int, i
 
 	var bid ds.SoftwareBid
 
-	result := d.db.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Update("status", newStatus)
+	result := d.DB.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Update("status", newStatus)
 	if result.Error != nil {
 		return 0, 0, result.Error
 	} else if result.RowsAffected == 0 {
 		return 0, 0, errors.New("bid not found")
 	}
 
-	result = d.db.Preload("Softwares.SoftwareService").First(&bid)
+	result = d.DB.Preload("Softwares.SoftwareService").First(&bid)
 	if result.Error != nil {
 		return 0, 0, result.Error
 	}
@@ -344,11 +352,11 @@ func (d *SoftwareDatabase) ModerateSoftwareBid(bidID int, approved bool) (int, i
 }
 
 func (d *SoftwareDatabase) DeleteSoftwareBid(bidId int) (int, error) {
-	// result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ?", bidId).Delete(&ds.SoftwareService_n_SoftwareBid{})
+	// result := d.DB.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ?", bidId).Delete(&ds.SoftwareService_n_SoftwareBid{})
 	// if result.Error != nil {
 	// 	return 0, result.Error
 	// }
-	result := d.db.Model(&ds.SoftwareBid{}).Where("id = ?", bidId).Update("status", "удалён")
+	result := d.DB.Model(&ds.SoftwareBid{}).Where("id = ?", bidId).Update("status", "удалён")
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -360,13 +368,13 @@ func (d *SoftwareDatabase) DeleteSoftwareBid(bidId int) (int, error) {
 
 func (d *SoftwareDatabase) GetSoftwareServicesBid(bidID int) (ds.SoftwareBid, []ds.SoftwareService, error) {
 	var softwareBid ds.SoftwareBid
-	err := d.db.Where("id = ?", bidID).First(&softwareBid).Error
+	err := d.DB.Where("id = ?", bidID).First(&softwareBid).Error
 	if err != nil {
 		return ds.SoftwareBid{}, []ds.SoftwareService{}, err
 	}
 
 	var software_n_bid []ds.SoftwareService_n_SoftwareBid
-	err = d.db.Where("software_bid_id = ?", bidID).Order("index ASC").Find(&software_n_bid).Error
+	err = d.DB.Where("software_bid_id = ?", bidID).Order("index ASC").Find(&software_n_bid).Error
 	if err != nil {
 		return ds.SoftwareBid{}, []ds.SoftwareService{}, err
 	}
@@ -391,14 +399,14 @@ func (d *SoftwareDatabase) GetSoftwareServicesBid(bidID int) (ds.SoftwareBid, []
 
 func (d *SoftwareDatabase) AddSoftwareServiceToBid(softwareID int, bidID int) (bool, error) {
 	var count int64
-	d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_service_id = ? AND software_bid_id = ?", softwareID, bidID).Count(&count)
+	d.DB.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_service_id = ? AND software_bid_id = ?", softwareID, bidID).Count(&count)
 
 	if count > 0 {
 		return false, errors.New("duplicate")
 	}
 
 	var software ds.SoftwareService
-	d.db.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).First(&software)
+	d.DB.Model(&ds.SoftwareService{}).Where("id = ?", softwareID).First(&software)
 
 	_, bidSize, _ := d.GetSoftwareServicesBid(bidID)
 	dataToAdd := ds.SoftwareService_n_SoftwareBid{
@@ -409,7 +417,7 @@ func (d *SoftwareDatabase) AddSoftwareServiceToBid(softwareID int, bidID int) (b
 		Price:             int(software.Price),
 	}
 
-	result := d.db.Create(&dataToAdd)
+	result := d.DB.Create(&dataToAdd)
 	if result.Error != nil {
 		return false, result.Error
 	}
@@ -417,7 +425,7 @@ func (d *SoftwareDatabase) AddSoftwareServiceToBid(softwareID int, bidID int) (b
 }
 
 func (d *SoftwareDatabase) SoftDeleteSoftwareBid(bidID int) bool {
-	result := d.db.Exec(`
+	result := d.DB.Exec(`
 		UPDATE software_bids SET status = 'удалён'
 		WHERE id = ?
 	`, bidID)
@@ -426,7 +434,7 @@ func (d *SoftwareDatabase) SoftDeleteSoftwareBid(bidID int) bool {
 
 func (d *SoftwareDatabase) FindUserActiveBid(userID int) (int, error) {
 	var bid ds.SoftwareBid
-	err := d.db.Where("creator_id = ? AND status = 'черновик'", userID).First(&bid).Error
+	err := d.DB.Where("creator_id = ? AND status = 'черновик'", userID).First(&bid).Error
 	if err != nil {
 		return 0, err
 	}
@@ -439,7 +447,7 @@ func (d *SoftwareDatabase) CreateUserActiveBid(userID int) int {
 		DateCreate: time.Now().Format("2006-01-02"),
 		CreatorID:  userID,
 	}
-	err := d.db.Create(&createdBid).Error
+	err := d.DB.Create(&createdBid).Error
 	if err != nil {
 		return 0
 	}
@@ -448,7 +456,7 @@ func (d *SoftwareDatabase) CreateUserActiveBid(userID int) int {
 
 func (d *SoftwareDatabase) DeleteSoftwareWithPhoto(SoftwareID int) (int, error) {
 	var software ds.SoftwareService
-	result := d.db.Where("id = ?", SoftwareID).First(&software)
+	result := d.DB.Where("id = ?", SoftwareID).First(&software)
 	if result.RowsAffected == 0 {
 		return 0, errors.New("software not found")
 	}
@@ -456,7 +464,7 @@ func (d *SoftwareDatabase) DeleteSoftwareWithPhoto(SoftwareID int) (int, error) 
 		return 0, result.Error
 	}
 
-	result = d.db.Model(&ds.SoftwareService{}).Where("id = ?", SoftwareID).Update("status", false).Update("image", "")
+	result = d.DB.Model(&ds.SoftwareService{}).Where("id = ?", SoftwareID).Update("status", false).Update("image", "")
 	if result.Error != nil {
 		return 0, result.Error
 	}
@@ -469,7 +477,7 @@ func (d *SoftwareDatabase) DeleteSoftwareWithPhoto(SoftwareID int) (int, error) 
 
 func (d *SoftwareDatabase) GetSoftwareBidByID(bidID int) (ds.SoftwareBid, error) {
 	var bid ds.SoftwareBid
-	result := d.db.Preload("Softwares.SoftwareService").First(&bid, bidID)
+	result := d.DB.Preload("Softwares.SoftwareService").First(&bid, bidID)
 	if result.Error != nil {
 		return ds.SoftwareBid{}, result.Error
 	}
@@ -477,7 +485,7 @@ func (d *SoftwareDatabase) GetSoftwareBidByID(bidID int) (ds.SoftwareBid, error)
 }
 
 func (d *SoftwareDatabase) DeleteSoftwareFromBid(bidID, SoftwareID int) error {
-	result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, SoftwareID).Delete(&ds.SoftwareService_n_SoftwareBid{})
+	result := d.DB.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, SoftwareID).Delete(&ds.SoftwareService_n_SoftwareBid{})
 	if result.RowsAffected == 0 {
 		return errors.New("software not found in current bid")
 	}
@@ -486,7 +494,7 @@ func (d *SoftwareDatabase) DeleteSoftwareFromBid(bidID, SoftwareID int) error {
 
 func (d *SoftwareDatabase) UpdateSoftwareInBid(bidID int, software ds.SoftwareService_n_SoftwareBid) (ds.SoftwareService_n_SoftwareBid, error) {
 	var bid ds.SoftwareService_n_SoftwareBid
-	result := d.db.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software.SoftwareServiceID).Update("count", software.Count).First(&bid)
+	result := d.DB.Model(&ds.SoftwareService_n_SoftwareBid{}).Where("software_bid_id = ? AND software_service_id = ?", bidID, software.SoftwareServiceID).Update("count", software.Count).First(&bid)
 	if result.Error != nil {
 		return ds.SoftwareService_n_SoftwareBid{}, result.Error
 	}
@@ -494,13 +502,13 @@ func (d *SoftwareDatabase) UpdateSoftwareInBid(bidID int, software ds.SoftwareSe
 }
 
 func (d *SoftwareDatabase) RegisterNewUser(userData ds.Users) error {
-	result := d.db.Create(&userData)
+	result := d.DB.Create(&userData)
 	return result.Error
 }
 
 func (d *SoftwareDatabase) GetUserAccountData(userID int) (ds.Users, error) {
 	var user ds.Users
-	result := d.db.Model(&ds.Users{}).Where("id = ?", userID).First(&user)
+	result := d.DB.Model(&ds.Users{}).Where("id = ?", userID).First(&user)
 	if result.Error != nil {
 		return ds.Users{}, result.Error
 	}
@@ -509,11 +517,11 @@ func (d *SoftwareDatabase) GetUserAccountData(userID int) (ds.Users, error) {
 
 func (d *SoftwareDatabase) UpdateUserAccountData(userID int, updateUser ds.Users) (ds.Users, error) {
 	var doubleUser ds.Users
-	result := d.db.Where("login = ?", updateUser.Login).First(&doubleUser)
+	result := d.DB.Where("login = ?", updateUser.Login).First(&doubleUser)
 	if result.RowsAffected != 0 {
 		return ds.Users{}, errors.New("duplicate username")
 	}
-	result = d.db.Where("id = ?", userID).Updates(updateUser).First(&updateUser)
+	result = d.DB.Where("id = ?", userID).Updates(updateUser).First(&updateUser)
 	if result.Error != nil {
 		return ds.Users{}, result.Error
 	}
@@ -525,11 +533,11 @@ func (d *SoftwareDatabase) UpdateUserAccountData(userID int, updateUser ds.Users
 
 func (d *SoftwareDatabase) AuthenticateUser(username, password string) (ds.Users, error) {
 	var user ds.Users
-	result := d.db.Where("login = ?", username).First(&user)
+	result := d.DB.Where("login = ?", username).First(&user)
 	if result.RowsAffected == 0 {
 		return ds.Users{}, errors.New("user not found")
 	}
-	result = d.db.Where("password = ?", password).First(&user)
+	result = d.DB.Where("password = ?", password).First(&user)
 	if result.RowsAffected == 0 {
 		return ds.Users{}, errors.New("incorrect password")
 	}
@@ -539,11 +547,12 @@ func (d *SoftwareDatabase) AuthenticateUser(username, password string) (ds.Users
 	return user, nil
 }
 
-func (d *SoftwareDatabase) DeauthorizeUser(userID int) error {
-	var user ds.Users
-	result := d.db.Where("id = ?", userID).First(&user)
-	if result.RowsAffected == 0 {
-		return errors.New("user not found")
-	}
-	return result.Error
+func (d *SoftwareDatabase) DeauthorizeUser(jwtToken string) error {
+	// var user ds.Users
+	// result := d.DB.Where("id = ?", userID).First(&user)
+	// if result.RowsAffected == 0 {
+	// 	return errors.New("user not found")
+	// }
+	// return result.Error
+	return nil
 }

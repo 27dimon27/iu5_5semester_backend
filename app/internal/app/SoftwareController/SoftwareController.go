@@ -3,15 +3,22 @@ package SoftwareController
 import (
 	"errors"
 	"io"
+	"log"
 	"math"
 	"path/filepath"
 	"software/internal/app/SoftwareDatabase"
 	"software/internal/app/ds"
+	"software/internal/app/role"
+	jwts "software/internal/jwt"
+	"software/internal/middlewares"
+	"strings"
+	"time"
 
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,30 +41,68 @@ func (c *SoftwareController) RegisterController(router *gin.Engine) {
 
 	// router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareServicesBid)
 
-	router.GET("/api/softwares", c.GetAllSoftwareServices)
-	router.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
-	router.POST("/api/softwares", c.AddNewSoftware)
-	router.PUT("/api/softwares/:softwareID", c.UpdateSoftware)
-	router.DELETE("/api/softwares/:softwareID", c.DeleteSoftwareWithPhoto)
-	router.POST("/api/add-software/:softwareID", c.AddSoftwareServiceToBidByID)
-	router.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService)
+	Guest := router.Group("/")
+	Guest.Use(middlewares.AuthMiddleware(c.SoftwareDatabase.RedisClient, role.Guest, role.User, role.Admin))
+	{
+		Guest.GET("/api/softwares", c.GetAllSoftwareServices)
+		Guest.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
+		Guest.POST("/api/registration", c.RegisterNewUser)
+		Guest.POST("/api/authentication", c.AuthenticateUser)
+	}
 
-	router.GET("/api/software-bids-icon", c.GetSoftwareServiceCountInBid)
-	router.GET("/api/software-bids", c.GetSoftwareBids)
-	router.GET("/api/software-bids/:softwareBidID", c.GetSoftwareBidByID)
-	router.PUT("/api/software-bids", c.UpdateActiveSoftwareBid)
-	router.PUT("/api/formation-software-bids", c.FormateActiveSoftwareBid)
-	router.PUT("/api/moderator-software-bids/:softwareBidID", c.ModerateSoftwareBid)
-	router.DELETE("/api/software-bids/:softwareBidID", c.DeleteSoftwareBid)
+	User := router.Group("/")
+	User.Use(middlewares.AuthMiddleware(c.SoftwareDatabase.RedisClient, role.User, role.Admin))
+	{
+		User.POST("/api/add-software/:softwareID", c.AddSoftwareServiceToBidByID)
+		User.GET("/api/software-bids-icon", c.GetSoftwareServiceCountInBid)
+		User.GET("/api/software-bids", c.GetSoftwareBids)
+		User.GET("/api/software-bids/:softwareBidID", c.GetSoftwareBidByID)
+		User.PUT("/api/software-bids", c.UpdateActiveSoftwareBid)
+		User.PUT("/api/formation-software-bids", c.FormateActiveSoftwareBid)
+		User.DELETE("/api/software-bids/:softwareBidID", c.DeleteSoftwareBid)
+		User.DELETE("/api/delete-software-from-bid/:softwareID", c.DeleteSoftwareFromBid)
+		User.PUT("/api/update-software-in-bid", c.UpdateSoftwareInBid)
+		User.GET("/api/account/:userID", c.GetUserAccountData)
+		User.PUT("/api/account/:userID", c.UpdateUserAccountData)
+		User.POST("/api/deauthorization", c.DeauthorizeUser)
+	}
 
-	router.DELETE("/api/delete-software-from-bid/:softwareID", c.DeleteSoftwareFromBid)
-	router.PUT("/api/update-software-in-bid", c.UpdateSoftwareInBid)
+	Admin := router.Group("/")
+	Admin.Use(middlewares.AuthMiddleware(c.SoftwareDatabase.RedisClient, role.Admin))
+	{
+		Admin.POST("/api/softwares", c.AddNewSoftware)
+		Admin.PUT("/api/softwares/:softwareID", c.UpdateSoftware)
+		Admin.DELETE("/api/softwares/:softwareID", c.DeleteSoftwareWithPhoto)
+		Admin.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService)
+		Admin.PUT("/api/moderator-software-bids/:softwareBidID", c.ModerateSoftwareBid)
+	}
 
-	router.POST("/api/registration", c.RegisterNewUser)
-	router.GET("/api/account/:userID", c.GetUserAccountData)
-	router.PUT("/api/account/:userID", c.UpdateUserAccountData)
-	router.POST("/api/authentication", c.AuthenticateUser)
-	router.POST("/api/deauthorization/:userID", c.DeauthorizeUser)
+	// router.GET("/api/softwares", c.GetAllSoftwareServices)
+	// router.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
+	// router.POST("/api/softwares", c.AddNewSoftware)
+	// router.PUT("/api/softwares/:softwareID", c.UpdateSoftware)
+	// router.DELETE("/api/softwares/:softwareID", c.DeleteSoftwareWithPhoto)
+	// router.POST("/api/add-software/:softwareID", c.AddSoftwareServiceToBidByID)
+	// router.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService)
+
+	// router.GET("/api/software-bids-icon", c.GetSoftwareServiceCountInBid)
+	// router.GET("/api/software-bids", c.GetSoftwareBids)
+	// router.GET("/api/software-bids/:softwareBidID", c.GetSoftwareBidByID)
+	// router.PUT("/api/software-bids", c.UpdateActiveSoftwareBid)
+	// router.PUT("/api/formation-software-bids", c.FormateActiveSoftwareBid)
+	// router.PUT("/api/moderator-software-bids/:softwareBidID", c.ModerateSoftwareBid)
+	// router.DELETE("/api/software-bids/:softwareBidID", c.DeleteSoftwareBid)
+
+	// router.DELETE("/api/delete-software-from-bid/:softwareID", c.DeleteSoftwareFromBid)
+	// router.PUT("/api/update-software-in-bid", c.UpdateSoftwareInBid)
+
+	// router.POST("/api/registration", c.RegisterNewUser)
+	// router.GET("/api/account/:userID", c.GetUserAccountData)
+	// router.PUT("/api/account/:userID", c.UpdateUserAccountData)
+	// router.POST("/api/authentication", c.AuthenticateUser)
+	// router.POST("/api/deauthorization/:userID", c.DeauthorizeUser)
+
+	// router.Use(middlewares.AuthMiddleware()).POST("/ping", pong)
 }
 
 func (c *SoftwareController) RegisterStatic(router *gin.Engine) {
@@ -330,6 +375,12 @@ func (c *SoftwareController) GetSoftwareServiceByID(ctx *gin.Context) {
 }
 
 func (c *SoftwareController) AddNewSoftware(ctx *gin.Context) {
+	rrole, exs := ctx.Get("role")
+	if !exs {
+		log.Printf("not exist")
+	} else {
+		log.Printf("%s", rrole)
+	}
 	software := ds.SoftwareService{}
 	err := ctx.ShouldBindJSON(&software)
 	if err != nil {
@@ -403,7 +454,8 @@ func (c *SoftwareController) AddSoftwareServiceToBidByID(ctx *gin.Context) {
 
 	var bidID int
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bidID, err = c.SoftwareDatabase.FindUserActiveBid(creatorID)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -481,7 +533,9 @@ func (c *SoftwareController) AddPhotoToSoftwareService(ctx *gin.Context) {
 func (c *SoftwareController) GetSoftwareServiceCountInBid(ctx *gin.Context) {
 	var softwares []ds.SoftwareService
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -512,7 +566,9 @@ func (c *SoftwareController) GetSoftwareBids(ctx *gin.Context) {
 		}
 	}
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bids, err = c.SoftwareDatabase.GetSoftwareBids(creatorID, filter)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -552,7 +608,9 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 		return
 	}
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -573,7 +631,9 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 func (c *SoftwareController) FormateActiveSoftwareBid(ctx *gin.Context) {
 	var softwaresInBid []ds.SoftwareService_n_SoftwareBid
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -653,7 +713,9 @@ func (c *SoftwareController) DeleteSoftwareFromBid(ctx *gin.Context) {
 		return
 	}
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -681,7 +743,9 @@ func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
 		return
 	}
 
-	creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
+	creatorIDVal, _ := ctx.Get("userID")
+	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
 	if err != nil {
 		c.errorController(ctx, http.StatusBadRequest, err)
@@ -785,27 +849,62 @@ func (c *SoftwareController) AuthenticateUser(ctx *gin.Context) {
 		return
 	}
 
+	token, err := jwts.GenerateToken(foundUser)
+	if err != nil {
+		c.errorController(ctx, http.StatusBadRequest, err)
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"user": foundUser,
+		"user":  foundUser,
+		"token": token,
 	})
 }
 
 func (c *SoftwareController) DeauthorizeUser(ctx *gin.Context) {
-	userID, err := strconv.Atoi(ctx.Param("userID"))
-	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
+	// userID, err := strconv.Atoi(ctx.Param("userID"))
+	// if err != nil {
+	// 	c.errorController(ctx, http.StatusBadRequest, err)
+	// 	return
+	// }
+
+	jwtStr := ctx.GetHeader("Authorization")
+	prefix := "Bearer "
+	if !strings.HasPrefix(jwtStr, prefix) {
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	err = c.SoftwareDatabase.DeauthorizeUser(userID)
+	jwtStr = jwtStr[len(prefix):]
+
+	claims, err := jwts.ValidateToken(jwtStr)
 	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		log.Println(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"userID": userID,
+	_, err = jwt.ParseWithClaims(jwtStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(ds.JWTSecret), nil
 	})
+	if err != nil {
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		log.Println(err)
+		return
+	}
+
+	// err = c.SoftwareDatabase.DeauthorizeUser(ctx, jwtStr)
+	// if err != nil {
+	// 	c.errorController(ctx, http.StatusBadRequest, err)
+	// 	return
+	// }
+
+	err = c.SoftwareDatabase.RedisClient.WriteJWTToBlacklist(ctx.Request.Context(), jwtStr, time.Hour*24)
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
 }
 
 // ПРОТЕСТИРОВАТЬ НОВЫЕ ВАРИКИ РУЧЕК С НОВЫМИ ВОЗВРАТАМИ (УСЛУГИ, ЗАЯВКИ, ЮЗЕРЫ, И Т.Д.)

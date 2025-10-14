@@ -39,6 +39,7 @@ type Users struct {
 	ID          int    `gorm:"primaryKey" json:"-"`
 	Login       string `gorm:"type:varchar(30);not null;unique" json:"login"`
 	Password    string `gorm:"type:varchar(100);not null" json:"password"`
+	Role        string `gorm:"type:varchar(20)" json:"role"`
 	IsModerator bool   `gorm:"default:false" json:"isModerator"`
 }
 

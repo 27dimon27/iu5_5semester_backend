@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/minio/minio-go/v7"
@@ -73,4 +74,22 @@ func NewMinioClient() (*minio.Client, error) {
 
 	log.Printf("Successfully connected to MinIO at %s", MinioClientConfig.Endpoint)
 	return minioClient, nil
+}
+
+type RedisConfig struct {
+	Host        string
+	Password    string
+	Port        int
+	User        string
+	DialTimeout time.Duration
+	ReadTimeout time.Duration
+}
+
+var RedisClientConfig = RedisConfig{
+	Host:        "0.0.0.0",
+	Port:        6379,
+	User:        "",
+	Password:    "password",
+	DialTimeout: time.Second * 10,
+	ReadTimeout: time.Second * 10,
 }
