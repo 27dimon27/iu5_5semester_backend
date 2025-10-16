@@ -24,7 +24,7 @@ type SoftwareBid struct {
 }
 
 type SoftwareService_n_SoftwareBid struct {
-	ID                int `gorm:"primaryKey" json:"-"`
+	ID                int `gorm:"primaryKey;uniqueIndex:idx_software" json:"-"`
 	SoftwareServiceID int `gorm:"not null;uniqueIndex:idx_software" json:"softwareID"`
 	SoftwareBidID     int `gorm:"not null;uniqueIndex:idx_software" json:"-"`
 	Count             int `gorm:"not null;default:1" json:"count,omitempty"`
@@ -66,4 +66,9 @@ type Photo struct {
 	Size      int64     `json:"size"`
 	URL       string    `json:"url"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type UserData struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

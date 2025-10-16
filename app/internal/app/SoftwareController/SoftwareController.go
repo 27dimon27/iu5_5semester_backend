@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"math"
 	"path/filepath"
 	"software/internal/app/SoftwareDatabase"
 	"software/internal/app/ds"
@@ -20,7 +19,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
+
+	_ "software/docs"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// http://localhost/swagger/index.html
 
 type SoftwareController struct {
 	SoftwareDatabase *SoftwareDatabase.SoftwareDatabase
@@ -33,13 +39,7 @@ func NewSoftwareController(d *SoftwareDatabase.SoftwareDatabase) *SoftwareContro
 }
 
 func (c *SoftwareController) RegisterController(router *gin.Engine) {
-	// router.GET("/softwares", c.GetSoftwareServices)
-	// router.GET("/softwares/:softwareID", c.GetSoftwareService)
-	// router.GET("/software-bids/:softwareBidID", c.GetSoftwareServicesBid)
-	// router.POST("/:softwareBidID/add-software/:softwareID", c.AddSoftwareServiceToBid)
-	// router.POST("/software-bids/delete-software-bid/:softwareBidID", c.SoftDeleteSoftwareBid)
-
-	// router.POST("/software-bids/calc-software-bid/:softwareBidID", c.GetSoftwareServicesBid)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	Guest := router.Group("/")
 	Guest.Use(middlewares.AuthMiddleware(c.SoftwareDatabase.RedisClient, role.Guest, role.User, role.Admin))
@@ -55,7 +55,7 @@ func (c *SoftwareController) RegisterController(router *gin.Engine) {
 	{
 		User.POST("/api/add-software/:softwareID", c.AddSoftwareServiceToBidByID)
 		User.GET("/api/software-bids-icon", c.GetSoftwareServiceCountInBid)
-		User.GET("/api/software-bids", c.GetSoftwareBids)
+		User.POST("/api/software-bids", c.GetSoftwareBids)
 		User.GET("/api/software-bids/:softwareBidID", c.GetSoftwareBidByID)
 		User.PUT("/api/software-bids", c.UpdateActiveSoftwareBid)
 		User.PUT("/api/formation-software-bids", c.FormateActiveSoftwareBid)
@@ -76,33 +76,6 @@ func (c *SoftwareController) RegisterController(router *gin.Engine) {
 		Admin.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService)
 		Admin.PUT("/api/moderator-software-bids/:softwareBidID", c.ModerateSoftwareBid)
 	}
-
-	// router.GET("/api/softwares", c.GetAllSoftwareServices)
-	// router.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
-	// router.POST("/api/softwares", c.AddNewSoftware)
-	// router.PUT("/api/softwares/:softwareID", c.UpdateSoftware)
-	// router.DELETE("/api/softwares/:softwareID", c.DeleteSoftwareWithPhoto)
-	// router.POST("/api/add-software/:softwareID", c.AddSoftwareServiceToBidByID)
-	// router.POST("/api/add-photo/:softwareID", c.AddPhotoToSoftwareService)
-
-	// router.GET("/api/software-bids-icon", c.GetSoftwareServiceCountInBid)
-	// router.GET("/api/software-bids", c.GetSoftwareBids)
-	// router.GET("/api/software-bids/:softwareBidID", c.GetSoftwareBidByID)
-	// router.PUT("/api/software-bids", c.UpdateActiveSoftwareBid)
-	// router.PUT("/api/formation-software-bids", c.FormateActiveSoftwareBid)
-	// router.PUT("/api/moderator-software-bids/:softwareBidID", c.ModerateSoftwareBid)
-	// router.DELETE("/api/software-bids/:softwareBidID", c.DeleteSoftwareBid)
-
-	// router.DELETE("/api/delete-software-from-bid/:softwareID", c.DeleteSoftwareFromBid)
-	// router.PUT("/api/update-software-in-bid", c.UpdateSoftwareInBid)
-
-	// router.POST("/api/registration", c.RegisterNewUser)
-	// router.GET("/api/account/:userID", c.GetUserAccountData)
-	// router.PUT("/api/account/:userID", c.UpdateUserAccountData)
-	// router.POST("/api/authentication", c.AuthenticateUser)
-	// router.POST("/api/deauthorization/:userID", c.DeauthorizeUser)
-
-	// router.Use(middlewares.AuthMiddleware()).POST("/ping", pong)
 }
 
 func (c *SoftwareController) RegisterStatic(router *gin.Engine) {
@@ -117,220 +90,16 @@ func (c *SoftwareController) errorController(ctx *gin.Context, errorStatusCode i
 	})
 }
 
-func (c *SoftwareController) GetSoftwareServices(ctx *gin.Context) {
-	var softwares []ds.SoftwareService
-	var bidCount []ds.SoftwareService
-	var bidID int
-	var err error
-
-	searchQuery := ctx.Query("software-search")
-	if searchQuery == "" {
-		softwares, err = c.SoftwareDatabase.GetSoftwareServices()
-		if err != nil {
-			c.errorController(ctx, http.StatusInternalServerError, err)
-		}
-	} else {
-		softwares, err = c.SoftwareDatabase.GetSoftwareServicesByTitle(searchQuery)
-		if err != nil {
-			c.errorController(ctx, http.StatusInternalServerError, err)
-		}
-	}
-
-	userID := c.SoftwareDatabase.SingletonGetCreator()
-	bidID, err = c.SoftwareDatabase.FindUserActiveBid(userID)
-
-	if err != nil && err.Error() != "record not found" {
-		c.errorController(ctx, http.StatusBadRequest, err)
-	}
-
-	if bidID != 0 {
-		_, bidCount, err = c.SoftwareDatabase.GetSoftwareServicesBid(bidID)
-		if err != nil {
-			c.errorController(ctx, http.StatusBadRequest, err)
-		}
-	}
-
-	ctx.HTML(http.StatusOK, "MainPage.html", gin.H{
-		"services":       softwares,
-		"softwareSearch": searchQuery,
-		"bidCount":       len(bidCount),
-		"bidID":          bidID,
-	})
-}
-
-func (c *SoftwareController) GetSoftwareService(ctx *gin.Context) {
-	idStr := ctx.Param("softwareID")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
-	}
-
-	software, err := c.SoftwareDatabase.GetSoftwareService(id)
-	if err != nil {
-		c.errorController(ctx, http.StatusInternalServerError, err)
-	}
-
-	ctx.HTML(http.StatusOK, "ServicePage.html", gin.H{
-		"service": software,
-	})
-}
-
-func (c *SoftwareController) GetSoftwareServicesBid(ctx *gin.Context) {
-	var bid ds.SoftwareBid
-	var softwares []ds.SoftwareService
-	var err error
-
-	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
-	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
-	}
-
-	// bidID := c.SoftwareDatabase.FindUserActiveBid(userID)
-
-	if bidID != 0 {
-		bid, softwares, err = c.SoftwareDatabase.GetSoftwareServicesBid(bidID)
-		if err != nil {
-			c.errorController(ctx, http.StatusInternalServerError, err)
-		}
-
-		if len(softwares) == 0 {
-			ctx.Redirect(http.StatusSeeOther, ctx.Request.Referer())
-			return
-		}
-	} else {
-		ctx.Redirect(http.StatusSeeOther, ctx.Request.Referer())
-		return
-	}
-
-	company := ctx.PostForm("company")
-
-	var countsIDs, gradesIDs []string
-	for _, software := range softwares {
-		id := strconv.Itoa(int(software.ID))
-		countsIDs = append(countsIDs, "count_"+id)
-		gradesIDs = append(gradesIDs, "grade_"+id)
-	}
-
-	var counts []int
-	var grades []string
-	var intCount int
-	var strGrade string
-
-	for idx := range countsIDs {
-		intCount, _ = strconv.Atoi(ctx.PostForm(countsIDs[idx]))
-		if intCount == 0 {
-			intCount = 1
-		}
-		counts = append(counts, intCount)
-
-		strGrade = ctx.PostForm(gradesIDs[idx])
-		if strGrade == "" {
-			strGrade = "junior"
-		}
-		grades = append(grades, strGrade)
-	}
-
-	allSoftwares, err := c.SoftwareDatabase.GetSoftwareServices()
-	if err != nil {
-		c.errorController(ctx, http.StatusInternalServerError, err)
-	}
-
-	var sums []float32
-	var cur_sum float32
-	coefs := c.SoftwareDatabase.GetCoefficients()
-	coeffMap := make(map[string]float32)
-
-	for _, coef := range coefs {
-		coeffMap[coef.Level] = coef.Coeff
-	}
-
-	for idxSoftware, software := range softwares {
-		for _, oneSoftware := range allSoftwares {
-			if software.ID == oneSoftware.ID {
-				cur_sum = software.Price * float32(counts[idxSoftware]) * coeffMap[grades[idxSoftware]]
-				sums = append(sums, cur_sum)
-			}
-		}
-	}
-
-	var sum float32
-	for _, software_sum := range sums {
-		sum += software_sum
-	}
-
-	var keyCoefs []string
-	for _, coef := range coefs {
-		keyCoefs = append(keyCoefs, coef.Level)
-	}
-
-	var softwaresInBid []ds.SoftwareServiceInSoftwareBid
-
-	for idx := range softwares {
-		curSoftwareInBid := ds.SoftwareServiceInSoftwareBid{
-			SoftwareService: softwares[idx],
-			Count:           counts[idx],
-			Grade:           grades[idx],
-			Sum:             int(math.Round(float64(sums[idx]))),
-		}
-		softwaresInBid = append(softwaresInBid, curSoftwareInBid)
-	}
-
-	companies := []string{
-		"Apple", "Microsoft", "Google", "Amazon", "Tesla",
-	}
-
-	ctx.HTML(http.StatusOK, "BidPage.html", gin.H{
-		"bid":       bid,
-		"company":   company,
-		"services":  softwaresInBid,
-		"companies": companies,
-		"sum":       sum,
-		"keyCoefs":  keyCoefs,
-		"bidID":     bidID,
-	})
-}
-
-func (c *SoftwareController) AddSoftwareServiceToBid(ctx *gin.Context) {
-	softwareID, err := strconv.Atoi(ctx.Param("softwareID"))
-	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
-	}
-	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
-	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
-	}
-
-	userID := c.SoftwareDatabase.SingletonGetCreator()
-	// bidID := c.SoftwareDatabase.FindUserActiveBid(userID)
-
-	if bidID == 0 {
-		bidID = c.SoftwareDatabase.CreateUserActiveBid(userID)
-	}
-
-	_, err = c.SoftwareDatabase.AddSoftwareServiceToBid(softwareID, bidID)
-	if err != nil {
-		if err.Error() == "duplicate" {
-			c.errorController(ctx, http.StatusBadRequest, err)
-		}
-		c.errorController(ctx, http.StatusInternalServerError, err)
-	}
-	ctx.Redirect(http.StatusFound, "/softwares")
-}
-
-func (c *SoftwareController) SoftDeleteSoftwareBid(ctx *gin.Context) {
-	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
-	if err != nil {
-		c.errorController(ctx, http.StatusBadRequest, err)
-	}
-
-	// bidID := c.SoftwareDatabase.FindUserActiveBid(userID)
-
-	result := c.SoftwareDatabase.SoftDeleteSoftwareBid(bidID)
-	if result {
-		ctx.Redirect(http.StatusFound, "/softwares")
-	}
-}
-
+// GetAllSoftwareServices godoc
+// @Summary Получить все услуги ПО
+// @Description Получает список всех услуг ПО с фильтрацией
+// @Tags Услуги
+// @Accept json
+// @Produce json
+// @Param software-search query string false "Поисковый запрос"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/softwares [get]
 func (c *SoftwareController) GetAllSoftwareServices(ctx *gin.Context) {
 	var softwares []ds.SoftwareService
 	var err error
@@ -355,6 +124,17 @@ func (c *SoftwareController) GetAllSoftwareServices(ctx *gin.Context) {
 	})
 }
 
+// GetSoftwareServiceByID godoc
+// @Summary Получить услугу ПО по ID
+// @Description Получает информацию о конкретной услуге ПО по её ID
+// @Tags Услуги
+// @Accept json
+// @Produce json
+// @Param softwareID path int true "ID услуги ПО"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/softwares/{softwareID} [get]
 func (c *SoftwareController) GetSoftwareServiceByID(ctx *gin.Context) {
 	idStr := ctx.Param("softwareID")
 	id, err := strconv.Atoi(idStr)
@@ -374,6 +154,18 @@ func (c *SoftwareController) GetSoftwareServiceByID(ctx *gin.Context) {
 	})
 }
 
+// AddNewSoftware godoc
+// @Summary Добавить новую услугу ПО
+// @Description Создает новую услугу ПО (только для модераторов)
+// @Tags Услуги
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param software body ds.SoftwareService true "Данные услуги ПО"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/softwares [post]
 func (c *SoftwareController) AddNewSoftware(ctx *gin.Context) {
 	rrole, exs := ctx.Get("role")
 	if !exs {
@@ -399,6 +191,19 @@ func (c *SoftwareController) AddNewSoftware(ctx *gin.Context) {
 	})
 }
 
+// UpdateSoftware godoc
+// @Summary Обновить услугу ПО
+// @Description Обновляет информацию об услуге ПО (только для модераторов)
+// @Tags Услуги
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareID path int true "ID услуги ПО"
+// @Param software body ds.SoftwareService true "Обновленные данные услуги ПО"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/softwares/{softwareID} [put]
 func (c *SoftwareController) UpdateSoftware(ctx *gin.Context) {
 	strSoftwareID := ctx.Param("softwareID")
 	softwareID, err := strconv.Atoi(strSoftwareID)
@@ -425,6 +230,18 @@ func (c *SoftwareController) UpdateSoftware(ctx *gin.Context) {
 	})
 }
 
+// DeleteSoftwareWithPhoto godoc
+// @Summary Удалить услугу ПО с фотографией
+// @Description Удаляет услугу ПО и связанную с ней фотографию (только для модераторов)
+// @Tags Услуги
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareID path int true "ID услуги ПО"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/softwares/{softwareID} [delete]
 func (c *SoftwareController) DeleteSoftwareWithPhoto(ctx *gin.Context) {
 	strSoftwareID := ctx.Param("softwareID")
 	softwareID, err := strconv.Atoi(strSoftwareID)
@@ -444,6 +261,18 @@ func (c *SoftwareController) DeleteSoftwareWithPhoto(ctx *gin.Context) {
 	})
 }
 
+// AddSoftwareServiceToBidByID godoc
+// @Summary Добавить услугу ПО в заявку
+// @Description Добавляет услугу ПО в активную заявку пользователя
+// @Tags Услуги
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareID path int true "ID услуги ПО"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/add-software/{softwareID} [post]
 func (c *SoftwareController) AddSoftwareServiceToBidByID(ctx *gin.Context) {
 	strSoftwareID := ctx.Param("softwareID")
 	softwareID, err := strconv.Atoi(strSoftwareID)
@@ -482,6 +311,20 @@ func (c *SoftwareController) AddSoftwareServiceToBidByID(ctx *gin.Context) {
 	})
 }
 
+// AddPhotoToSoftwareService godoc
+// @Summary Добавить фотографию к услуге ПО
+// @Description Загружает и прикрепляет фотографию к услуге ПО (только для модераторов)
+// @Tags Услуги
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param softwareID path int true "ID услуги ПО"
+// @Param photo_name formData string true "Название фотографии"
+// @Param file formData file true "Файл фотографии"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/add-photo/{softwareID} [post]
 func (c *SoftwareController) AddPhotoToSoftwareService(ctx *gin.Context) {
 	type UploadPhotoRequest struct {
 		PhotoName string `form:"photo_name" binding:"required"`
@@ -530,10 +373,20 @@ func (c *SoftwareController) AddPhotoToSoftwareService(ctx *gin.Context) {
 	})
 }
 
+// GetSoftwareServiceCountInBid godoc
+// @Summary Получить количество услуг в активной заявке
+// @Description Возвращает количество услуг ПО в активной заявке пользователя
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/software-bids-icon [get]
 func (c *SoftwareController) GetSoftwareServiceCountInBid(ctx *gin.Context) {
 	var softwares []ds.SoftwareService
 
-	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	creatorIDVal, _ := ctx.Get("userID")
 	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -554,6 +407,18 @@ func (c *SoftwareController) GetSoftwareServiceCountInBid(ctx *gin.Context) {
 	})
 }
 
+// GetSoftwareBids godoc
+// @Summary Получить заявки пользователя
+// @Description Возвращает список заявок пользователя с фильтрацией
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param filter body ds.FilterRequest false "Параметры фильтрации"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/software-bids [post]
 func (c *SoftwareController) GetSoftwareBids(ctx *gin.Context) {
 	var filter ds.FilterRequest
 	var bids []ds.SoftwareBid
@@ -566,7 +431,6 @@ func (c *SoftwareController) GetSoftwareBids(ctx *gin.Context) {
 		}
 	}
 
-	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	creatorIDVal, _ := ctx.Get("userID")
 	creatorID := creatorIDVal.(int)
 	bids, err = c.SoftwareDatabase.GetSoftwareBids(creatorID, filter)
@@ -580,6 +444,18 @@ func (c *SoftwareController) GetSoftwareBids(ctx *gin.Context) {
 	})
 }
 
+// GetSoftwareBidByID godoc
+// @Summary Получить заявку по ID
+// @Description Возвращает информацию о конкретной заявке по её ID
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareBidID path int true "ID заявки"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/software-bids/{softwareBidID} [get]
 func (c *SoftwareController) GetSoftwareBidByID(ctx *gin.Context) {
 	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
 	if err != nil {
@@ -600,6 +476,18 @@ func (c *SoftwareController) GetSoftwareBidByID(ctx *gin.Context) {
 	})
 }
 
+// UpdateActiveSoftwareBid godoc
+// @Summary Обновить активную заявку
+// @Description Обновляет данные активной заявки пользователя
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param bid body ds.SoftwareBid true "Обновлённые данные заявки"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/software-bids [put]
 func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 	var bid ds.SoftwareBid
 	err := ctx.ShouldBindJSON(&bid)
@@ -608,7 +496,6 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 		return
 	}
 
-	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	creatorIDVal, _ := ctx.Get("userID")
 	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -628,10 +515,20 @@ func (c *SoftwareController) UpdateActiveSoftwareBid(ctx *gin.Context) {
 	})
 }
 
+// FormateActiveSoftwareBid godoc
+// @Summary Оформить активную заявку
+// @Description Оформляет активную заявку пользователя
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/formation-software-bids [put]
 func (c *SoftwareController) FormateActiveSoftwareBid(ctx *gin.Context) {
 	var softwaresInBid []ds.SoftwareService_n_SoftwareBid
 
-	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	creatorIDVal, _ := ctx.Get("userID")
 	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -664,6 +561,19 @@ func (c *SoftwareController) FormateActiveSoftwareBid(ctx *gin.Context) {
 	})
 }
 
+// ModerateSoftwareBid godoc
+// @Summary Модерировать заявку
+// @Description Одобряет или отклоняет заявку (только для модераторов)
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareBidID path int true "ID заявки"
+// @Param approved query boolean false "Статус одобрения"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/moderator-software-bids/{softwareBidID} [put]
 func (c *SoftwareController) ModerateSoftwareBid(ctx *gin.Context) {
 	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
 	if err != nil {
@@ -688,6 +598,18 @@ func (c *SoftwareController) ModerateSoftwareBid(ctx *gin.Context) {
 	})
 }
 
+// DeleteSoftwareBid godoc
+// @Summary Удалить заявку
+// @Description Удаляет заявку по ID
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareBidID path int true "ID заявки"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/software-bids/{softwareBidID} [delete]
 func (c *SoftwareController) DeleteSoftwareBid(ctx *gin.Context) {
 	bidID, err := strconv.Atoi(ctx.Param("softwareBidID"))
 	if err != nil {
@@ -706,6 +628,18 @@ func (c *SoftwareController) DeleteSoftwareBid(ctx *gin.Context) {
 	})
 }
 
+// DeleteSoftwareFromBid godoc
+// @Summary Удалить услугу ПО из заявки
+// @Description Удаляет услугу ПО из активной заявки пользователя
+// @Tags М-М
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareID path int true "ID услуги ПО"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/delete-software-from-bid/{softwareID} [delete]
 func (c *SoftwareController) DeleteSoftwareFromBid(ctx *gin.Context) {
 	softwareID, err := strconv.Atoi(ctx.Param("softwareID"))
 	if err != nil {
@@ -713,7 +647,6 @@ func (c *SoftwareController) DeleteSoftwareFromBid(ctx *gin.Context) {
 		return
 	}
 
-	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	creatorIDVal, _ := ctx.Get("userID")
 	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -734,6 +667,18 @@ func (c *SoftwareController) DeleteSoftwareFromBid(ctx *gin.Context) {
 	})
 }
 
+// UpdateSoftwareInBid godoc
+// @Summary Обновить услугу ПО в заявке
+// @Description Обновляет информацию об услуге ПО в активной заявке
+// @Tags М-М
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param softwareInBid body ds.SoftwareService_n_SoftwareBid true "Данные услуги ПО в заявке"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/update-software-in-bid [put]
 func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
 	softwareInBid := ds.SoftwareService_n_SoftwareBid{}
 
@@ -743,7 +688,6 @@ func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
 		return
 	}
 
-	// creatorID := c.SoftwareDatabase.SingletonGetCreator()
 	creatorIDVal, _ := ctx.Get("userID")
 	creatorID := creatorIDVal.(int)
 	bidID, err := c.SoftwareDatabase.FindUserActiveBid(creatorID)
@@ -763,6 +707,17 @@ func (c *SoftwareController) UpdateSoftwareInBid(ctx *gin.Context) {
 	})
 }
 
+// RegisterNewUser godoc
+// @Summary Регистрация нового пользователя
+// @Description Создает нового пользователя в системе
+// @Tags Пользователи
+// @Accept json
+// @Produce json
+// @Param newUser body ds.Users true "Данные нового пользователя"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/registration [post]
 func (c *SoftwareController) RegisterNewUser(ctx *gin.Context) {
 	var newUser ds.Users
 
@@ -783,6 +738,18 @@ func (c *SoftwareController) RegisterNewUser(ctx *gin.Context) {
 	})
 }
 
+// GetUserAccountData godoc
+// @Summary Получить данные аккаунта пользователя
+// @Description Возвращает информацию о пользователе по его ID
+// @Tags Пользователи
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param userID path int true "ID пользователя"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/account/{userID} [get]
 func (c *SoftwareController) GetUserAccountData(ctx *gin.Context) {
 	userID, err := strconv.Atoi(ctx.Param("userID"))
 	if err != nil {
@@ -801,6 +768,19 @@ func (c *SoftwareController) GetUserAccountData(ctx *gin.Context) {
 	})
 }
 
+// UpdateUserAccountData godoc
+// @Summary Обновить данные аккаунта пользователя
+// @Description Обновляет информацию о пользователе
+// @Tags Пользователи
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param userID path int true "ID пользователя"
+// @Param updateUser body ds.Users true "Обновленные данные пользователя"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/account/{userID} [put]
 func (c *SoftwareController) UpdateUserAccountData(ctx *gin.Context) {
 	userID, err := strconv.Atoi(ctx.Param("userID"))
 	if err != nil {
@@ -827,13 +807,19 @@ func (c *SoftwareController) UpdateUserAccountData(ctx *gin.Context) {
 	})
 }
 
+// AuthenticateUser godoc
+// @Summary Аутентификация пользователя
+// @Description Выполняет вход пользователя в систему и возвращает JWT токен
+// @Tags Пользователи
+// @Accept json
+// @Produce json
+// @Param request body ds.UserData true "Данные для аутентификации"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/authentication [post]
 func (c *SoftwareController) AuthenticateUser(ctx *gin.Context) {
-	type UserData struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-
-	var userData UserData
+	var userData ds.UserData
 
 	err := ctx.ShouldBindJSON(&userData)
 	if err != nil {
@@ -860,13 +846,18 @@ func (c *SoftwareController) AuthenticateUser(ctx *gin.Context) {
 	})
 }
 
+// DeauthorizeUser godoc
+// @Summary Выход пользователя из системы
+// @Description Добавляет JWT токен в черный список для деактивации
+// @Tags Пользователи
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 "Успешный выход"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/deauthorization [post]
 func (c *SoftwareController) DeauthorizeUser(ctx *gin.Context) {
-	// userID, err := strconv.Atoi(ctx.Param("userID"))
-	// if err != nil {
-	// 	c.errorController(ctx, http.StatusBadRequest, err)
-	// 	return
-	// }
-
 	jwtStr := ctx.GetHeader("Authorization")
 	prefix := "Bearer "
 	if !strings.HasPrefix(jwtStr, prefix) {
@@ -892,12 +883,6 @@ func (c *SoftwareController) DeauthorizeUser(ctx *gin.Context) {
 		return
 	}
 
-	// err = c.SoftwareDatabase.DeauthorizeUser(ctx, jwtStr)
-	// if err != nil {
-	// 	c.errorController(ctx, http.StatusBadRequest, err)
-	// 	return
-	// }
-
 	err = c.SoftwareDatabase.RedisClient.WriteJWTToBlacklist(ctx.Request.Context(), jwtStr, time.Hour*24)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
@@ -906,5 +891,3 @@ func (c *SoftwareController) DeauthorizeUser(ctx *gin.Context) {
 
 	ctx.Status(http.StatusOK)
 }
-
-// ПРОТЕСТИРОВАТЬ НОВЫЕ ВАРИКИ РУЧЕК С НОВЫМИ ВОЗВРАТАМИ (УСЛУГИ, ЗАЯВКИ, ЮЗЕРЫ, И Т.Д.)

@@ -14,6 +14,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// @title Software Development API
+// @version 1.0
+// @description API для системы разработки программного обеспечения
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:80
+// @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT токен в формате: "Bearer {token}"
 func main() {
 	router := gin.Default()
 	router.Use(cors.Default())

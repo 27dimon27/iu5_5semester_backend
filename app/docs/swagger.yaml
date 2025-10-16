@@ -1,0 +1,801 @@
+basePath: /
+definitions:
+  ds.FilterRequest:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+      status:
+        type: string
+    type: object
+  ds.SoftwareBid:
+    properties:
+      company:
+        type: string
+      creatorID:
+        type: integer
+      dateCreate:
+        type: string
+      dateFinish:
+        type: string
+      dateUpdate:
+        type: string
+      moderatorID:
+        type: integer
+      softwares:
+        items:
+          $ref: '#/definitions/ds.SoftwareService_n_SoftwareBid'
+        type: array
+      status:
+        type: string
+    type: object
+  ds.SoftwareService:
+    properties:
+      description:
+        type: string
+      image:
+        type: string
+      price:
+        type: number
+      status:
+        type: boolean
+      title:
+        type: string
+    type: object
+  ds.SoftwareService_n_SoftwareBid:
+    properties:
+      count:
+        type: integer
+      price:
+        type: integer
+      softwareBid:
+        $ref: '#/definitions/ds.SoftwareBid'
+      softwareID:
+        type: integer
+      softwareService:
+        $ref: '#/definitions/ds.SoftwareService'
+    type: object
+  ds.UserData:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  ds.Users:
+    properties:
+      isModerator:
+        type: boolean
+      login:
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+    type: object
+host: localhost:80
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API для системы разработки программного обеспечения
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Software Development API
+  version: "1.0"
+paths:
+  /api/account/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о пользователе по его ID
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить данные аккаунта пользователя
+      tags:
+      - Пользователи
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию о пользователе
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: userID
+        required: true
+        type: integer
+      - description: Обновленные данные пользователя
+        in: body
+        name: updateUser
+        required: true
+        schema:
+          $ref: '#/definitions/ds.Users'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить данные аккаунта пользователя
+      tags:
+      - Пользователи
+  /api/add-photo/{softwareID}:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает и прикрепляет фотографию к услуге ПО (только для модераторов)
+      parameters:
+      - description: ID услуги ПО
+        in: path
+        name: softwareID
+        required: true
+        type: integer
+      - description: Название фотографии
+        in: formData
+        name: photo_name
+        required: true
+        type: string
+      - description: Файл фотографии
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Добавить фотографию к услуге ПО
+      tags:
+      - Услуги
+  /api/add-software/{softwareID}:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет услугу ПО в активную заявку пользователя
+      parameters:
+      - description: ID услуги ПО
+        in: path
+        name: softwareID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Добавить услугу ПО в заявку
+      tags:
+      - Услуги
+  /api/authentication:
+    post:
+      consumes:
+      - application/json
+      description: Выполняет вход пользователя в систему и возвращает JWT токен
+      parameters:
+      - description: Данные для аутентификации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ds.UserData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Аутентификация пользователя
+      tags:
+      - Пользователи
+  /api/deauthorization:
+    post:
+      consumes:
+      - application/json
+      description: Добавляет JWT токен в черный список для деактивации
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный выход
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Выход пользователя из системы
+      tags:
+      - Пользователи
+  /api/delete-software-from-bid/{softwareID}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет услугу ПО из активной заявки пользователя
+      parameters:
+      - description: ID услуги ПО
+        in: path
+        name: softwareID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить услугу ПО из заявки
+      tags:
+      - М-М
+  /api/formation-software-bids:
+    put:
+      consumes:
+      - application/json
+      description: Оформляет активную заявку пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Оформить активную заявку
+      tags:
+      - Заявки
+  /api/moderator-software-bids/{softwareBidID}:
+    put:
+      consumes:
+      - application/json
+      description: Одобряет или отклоняет заявку (только для модераторов)
+      parameters:
+      - description: ID заявки
+        in: path
+        name: softwareBidID
+        required: true
+        type: integer
+      - description: Статус одобрения
+        in: query
+        name: approved
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Модерировать заявку
+      tags:
+      - Заявки
+  /api/registration:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя в системе
+      parameters:
+      - description: Данные нового пользователя
+        in: body
+        name: newUser
+        required: true
+        schema:
+          $ref: '#/definitions/ds.Users'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Регистрация нового пользователя
+      tags:
+      - Пользователи
+  /api/software-bids:
+    post:
+      consumes:
+      - application/json
+      description: Возвращает список заявок пользователя с фильтрацией
+      parameters:
+      - description: Параметры фильтрации
+        in: body
+        name: filter
+        schema:
+          $ref: '#/definitions/ds.FilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить заявки пользователя
+      tags:
+      - Заявки
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные активной заявки пользователя
+      parameters:
+      - description: Обновлённые данные заявки
+        in: body
+        name: bid
+        required: true
+        schema:
+          $ref: '#/definitions/ds.SoftwareBid'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить активную заявку
+      tags:
+      - Заявки
+  /api/software-bids-icon:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает количество услуг ПО в активной заявке пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить количество услуг в активной заявке
+      tags:
+      - Заявки
+  /api/software-bids/{softwareBidID}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет заявку по ID
+      parameters:
+      - description: ID заявки
+        in: path
+        name: softwareBidID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить заявку
+      tags:
+      - Заявки
+    get:
+      consumes:
+      - application/json
+      description: Возвращает информацию о конкретной заявке по её ID
+      parameters:
+      - description: ID заявки
+        in: path
+        name: softwareBidID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить заявку по ID
+      tags:
+      - Заявки
+  /api/softwares:
+    get:
+      consumes:
+      - application/json
+      description: Получает список всех услуг ПО с фильтрацией
+      parameters:
+      - description: Поисковый запрос
+        in: query
+        name: software-search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить все услуги ПО
+      tags:
+      - Услуги
+    post:
+      consumes:
+      - application/json
+      description: Создает новую услугу ПО (только для модераторов)
+      parameters:
+      - description: Данные услуги ПО
+        in: body
+        name: software
+        required: true
+        schema:
+          $ref: '#/definitions/ds.SoftwareService'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Добавить новую услугу ПО
+      tags:
+      - Услуги
+  /api/softwares/{softwareID}:
+    delete:
+      consumes:
+      - application/json
+      description: Удаляет услугу ПО и связанную с ней фотографию (только для модераторов)
+      parameters:
+      - description: ID услуги ПО
+        in: path
+        name: softwareID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить услугу ПО с фотографией
+      tags:
+      - Услуги
+    get:
+      consumes:
+      - application/json
+      description: Получает информацию о конкретной услуге ПО по её ID
+      parameters:
+      - description: ID услуги ПО
+        in: path
+        name: softwareID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить услугу ПО по ID
+      tags:
+      - Услуги
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию об услуге ПО (только для модераторов)
+      parameters:
+      - description: ID услуги ПО
+        in: path
+        name: softwareID
+        required: true
+        type: integer
+      - description: Обновленные данные услуги ПО
+        in: body
+        name: software
+        required: true
+        schema:
+          $ref: '#/definitions/ds.SoftwareService'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить услугу ПО
+      tags:
+      - Услуги
+  /api/update-software-in-bid:
+    put:
+      consumes:
+      - application/json
+      description: Обновляет информацию об услуге ПО в активной заявке
+      parameters:
+      - description: Данные услуги ПО в заявке
+        in: body
+        name: softwareInBid
+        required: true
+        schema:
+          $ref: '#/definitions/ds.SoftwareService_n_SoftwareBid'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Неверный запрос
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить услугу ПО в заявке
+      tags:
+      - М-М
+securityDefinitions:
+  BearerAuth:
+    description: 'JWT токен в формате: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

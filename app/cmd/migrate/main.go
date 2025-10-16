@@ -171,6 +171,11 @@ func seedDatabase(db *gorm.DB) error {
 				DateCreate: time.Now().Format("2006-01-02"),
 				CreatorID:  1,
 			},
+			{
+				Status:     "сформирован",
+				DateCreate: time.Now().Format("2006-01-02"),
+				CreatorID:  1,
+			},
 		}
 
 		result := db.Create(&initialBids)
@@ -204,6 +209,27 @@ func seedDatabase(db *gorm.DB) error {
 				Count:             1,
 				Index:             3,
 				Price:             3_500,
+			},
+			{
+				SoftwareServiceID: 1,
+				SoftwareBidID:     2,
+				Count:             1,
+				Index:             1,
+				Price:             5_000,
+			},
+			{
+				SoftwareServiceID: 3,
+				SoftwareBidID:     2,
+				Count:             1,
+				Index:             2,
+				Price:             7_000,
+			},
+			{
+				SoftwareServiceID: 5,
+				SoftwareBidID:     1,
+				Count:             1,
+				Index:             3,
+				Price:             45_000,
 			},
 		}
 
