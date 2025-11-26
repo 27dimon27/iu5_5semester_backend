@@ -1,6 +1,8 @@
 package SoftwareController
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -48,6 +50,7 @@ func (c *SoftwareController) RegisterController(router *gin.Engine) {
 		Guest.GET("/api/softwares/:softwareID", c.GetSoftwareServiceByID)
 		Guest.POST("/api/registration", c.RegisterNewUser)
 		Guest.POST("/api/authentication", c.AuthenticateUser)
+		Guest.POST("/api/update-calculations", c.UpdateCalculations)
 	}
 
 	User := router.Group("/")
@@ -65,6 +68,7 @@ func (c *SoftwareController) RegisterController(router *gin.Engine) {
 		User.GET("/api/account/:userID", c.GetUserAccountData)
 		User.PUT("/api/account/:userID", c.UpdateUserAccountData)
 		User.POST("/api/deauthorization", c.DeauthorizeUser)
+		// User.POST("/api/calculate-bid/:bidID", c.CalculateBidServices)
 	}
 
 	Admin := router.Group("/")
@@ -581,20 +585,119 @@ func (c *SoftwareController) ModerateSoftwareBid(ctx *gin.Context) {
 		return
 	}
 
-	approved := false
-	if len(ctx.Query("approved")) > 0 {
-		approved = true
+	bid, err := c.SoftwareDatabase.GetSoftwareBidByID(bidID)
+	if err != nil {
+		c.errorController(ctx, http.StatusInternalServerError, err)
+		return
 	}
 
-	bidID, cost, err := c.SoftwareDatabase.ModerateSoftwareBid(bidID, approved)
+	servicesData := []map[string]interface{}{}
+	for _, software := range bid.Softwares {
+		serviceData := map[string]interface{}{
+			"software_service_id": software.SoftwareServiceID,
+			"price":               software.Price,
+			"page_count":          software.Count,
+			"bid_id":              bidID,
+		}
+		servicesData = append(servicesData, serviceData)
+	}
+
+	requestData := map[string]interface{}{
+		"bid_id":     bidID,
+		"services":   servicesData,
+		"auth_token": "12345678",
+	}
+
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		c.errorController(ctx, http.StatusInternalServerError, err)
+		return
+	}
+
+	asyncServiceURL := "http://localhost:8000/api/calculate/"
+	resp, err := http.Post(asyncServiceURL, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		c.errorController(ctx, http.StatusInternalServerError, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.errorController(ctx, http.StatusInternalServerError,
+			errors.New("async service returned error"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"status":  "calculation_started",
+		"bid_id":  bidID,
+		"message": "Calculation process initiated in async service",
+	})
+
+	// approved := false
+	// if len(ctx.Query("approved")) > 0 {
+	// 	approved = true
+	// }
+
+	// bidID, cost, err := c.SoftwareDatabase.ModerateSoftwareBid(bidID, approved)
+	// if err != nil {
+	// 	c.errorController(ctx, http.StatusInternalServerError, err)
+	// 	return
+	// }
+
+	// ctx.JSON(http.StatusOK, gin.H{
+	// 	"cost":  cost,
+	// 	"bidID": bidID,
+	// })
+}
+
+// UpdateCalculations godoc
+// @Summary Обновить результаты расчетов
+// @Description Принимает результаты расчетов от асинхронного сервиса
+// @Tags Заявки
+// @Accept json
+// @Produce json
+// @Param calculations body ds.CalculationResult true "Результаты расчетов"
+// @Success 200 {object} map[string]interface{} "Успешный ответ"
+// @Failure 400 {object} map[string]interface{} "Неверный запрос"
+// @Failure 500 {object} map[string]interface{} "Внутренняя ошибка сервера"
+// @Router /api/update-calculations [post]
+func (c *SoftwareController) UpdateCalculations(ctx *gin.Context) {
+	var calculationRequest struct {
+		BidID     int                    `json:"bid_id"`
+		Services  []ds.CalculationResult `json:"services"`
+		AuthToken string                 `json:"auth_token"`
+	}
+
+	err := ctx.ShouldBindJSON(&calculationRequest)
+	if err != nil {
+		c.errorController(ctx, http.StatusBadRequest, err)
+		return
+	}
+
+	if calculationRequest.AuthToken != "12345678" {
+		c.errorController(ctx, http.StatusUnauthorized, errors.New("invalid auth token"))
+		return
+	}
+
+	for _, result := range calculationRequest.Services {
+		err = c.SoftwareDatabase.UpdateCalculationResult(result, calculationRequest.BidID)
+		if err != nil {
+			c.errorController(ctx, http.StatusInternalServerError, err)
+			return
+		}
+	}
+
+	_, _, err = c.SoftwareDatabase.ModerateSoftwareBid(calculationRequest.BidID, true)
 	if err != nil {
 		c.errorController(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"cost":  cost,
-		"bidID": bidID,
+		"status":        "calculations_updated",
+		"updated_count": len(calculationRequest.Services),
+		"message":       "Calculation results successfully updated",
 	})
 }
 

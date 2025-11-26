@@ -15,7 +15,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:80",
+    "host": "localhost:8080",
     "basePath": "/",
     "paths": {
         "/api/account/{userID}": {
@@ -1141,6 +1141,9 @@
             "properties": {
                 "description": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "image": {
                     "type": "string"

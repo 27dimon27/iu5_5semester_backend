@@ -329,8 +329,10 @@ func (d *SoftwareDatabase) ModerateSoftwareBid(bidID int, approved bool) (int, i
 	}
 
 	var bid ds.SoftwareBid
+	var moderatorID = 1
+	var dateOfEnd = time.Now().Format("2006-01-02")
 
-	result := d.DB.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Update("status", newStatus)
+	result := d.DB.Model(&ds.SoftwareBid{}).Where("id = ?", bidID).Update("status", newStatus).Update("moderator_id", moderatorID).Update("date_finish", dateOfEnd)
 	if result.Error != nil {
 		return 0, 0, result.Error
 	} else if result.RowsAffected == 0 {
@@ -555,4 +557,51 @@ func (d *SoftwareDatabase) DeauthorizeUser(jwtToken string) error {
 	// }
 	// return result.Error
 	return nil
+}
+
+// UpdateCalculationResult обновляет поле результата в таблице М-М
+func (d *SoftwareDatabase) UpdateCalculationResult(result ds.CalculationResult, bidID int) error {
+	// Обновляем поле calculated_sum в таблице software_service_n_software_bid
+	updateData := map[string]interface{}{
+		"calculated_sum": result.CalculatedSum,
+	}
+
+	dbresult := d.DB.Model(&ds.SoftwareService_n_SoftwareBid{}).
+		Where("software_bid_id = ? AND software_service_id = ?", bidID, result.SoftwareServiceID).
+		Updates(updateData)
+
+	return dbresult.Error
+}
+
+// GetBidsWithCalculationCount получает заявки с количеством рассчитанных услуг
+func (d *SoftwareDatabase) GetBidsWithCalculationCount(userID int, filter ds.FilterRequest) ([]ds.SoftwareBidWithCalculation, error) {
+	var bids []ds.SoftwareBidWithCalculation
+
+	query := `
+		SELECT 
+			sb.*,
+			COUNT(sssb.software_service_id) as total_services,
+			SUM(CASE WHEN sssb.calculated_sum IS NOT NULL THEN 1 ELSE 0 END) as calculated_services
+		FROM software_bids sb
+		LEFT JOIN software_service_n_software_bid sssb ON sb.id = sssb.software_bid_id
+		WHERE sb.creator_id = ? AND sb.status NOT IN ('черновик', 'удалён')
+		GROUP BY sb.id
+	`
+
+	if filter.StartDate != "" {
+		query += " AND sb.date_create >= '" + filter.StartDate + "'"
+	}
+	if filter.EndDate != "" {
+		query += " AND sb.date_create <= '" + filter.EndDate + "'"
+	}
+	if filter.Status != "" {
+		query += " AND sb.status = '" + filter.Status + "'"
+	}
+
+	result := d.DB.Raw(query, userID).Scan(&bids)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return bids, nil
 }

@@ -34,6 +34,8 @@ definitions:
     properties:
       description:
         type: string
+      id:
+        type: integer
       image:
         type: string
       price:
@@ -74,7 +76,7 @@ definitions:
       role:
         type: string
     type: object
-host: localhost:80
+host: localhost:8080
 info:
   contact:
     email: support@swagger.io

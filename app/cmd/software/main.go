@@ -26,7 +26,7 @@ import (
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
 
-// @host localhost:80
+// @host localhost:8080
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -34,7 +34,21 @@ import (
 // @description JWT токен в формате: "Bearer {token}"
 func main() {
 	router := gin.Default()
-	router.Use(cors.Default())
+
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = []string{
+		"http://localhost:3000",
+		"http://127.0.0.1:3000",
+		"https://localhost:3000",
+		"https://127.0.0.1:3000",
+		"https://tauri.localhost",
+	}
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Authorization", "Accept"}
+	corsConfig.AllowCredentials = true
+
+	router.Use(cors.New(corsConfig))
+
 	conf, err := config.NewConfig()
 	if err != nil {
 		logrus.Fatalf("error loading config: %v", err)
@@ -51,5 +65,10 @@ func main() {
 	hand := SoftwareController.NewSoftwareController(rep)
 
 	application := pkg.NewApp(conf, router, hand)
+
+	// Запуск HTTPS сервера
+	// application.RunHTTPSApp()
+
+	// Запуск HTTP сервера
 	application.RunApp()
 }

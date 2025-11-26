@@ -3,7 +3,7 @@ package ds
 import "time"
 
 type SoftwareService struct {
-	ID          int     `gorm:"primaryKey" json:"-"`
+	ID          int     `gorm:"primaryKey" json:"id"`
 	Image       string  `gorm:"type:text;default:null" json:"image,omitempty"`
 	Title       string  `gorm:"type:varchar(100);not null" json:"title,omitempty"`
 	Description string  `gorm:"type:varchar(1000);default:null" json:"description,omitempty"`
@@ -24,12 +24,13 @@ type SoftwareBid struct {
 }
 
 type SoftwareService_n_SoftwareBid struct {
-	ID                int `gorm:"primaryKey;uniqueIndex:idx_software" json:"-"`
-	SoftwareServiceID int `gorm:"not null;uniqueIndex:idx_software" json:"softwareID"`
-	SoftwareBidID     int `gorm:"not null;uniqueIndex:idx_software" json:"-"`
-	Count             int `gorm:"not null;default:1" json:"count,omitempty"`
-	Index             int `gorm:"not null" json:"-"`
-	Price             int `gorm:"not null" json:"price,omitempty"`
+	ID                int  `gorm:"primaryKey;uniqueIndex:idx_software" json:"-"`
+	SoftwareServiceID int  `gorm:"not null;uniqueIndex:idx_software" json:"softwareID"`
+	SoftwareBidID     int  `gorm:"not null;uniqueIndex:idx_software" json:"-"`
+	Count             int  `gorm:"not null;default:1" json:"count,omitempty"`
+	Index             int  `gorm:"not null" json:"-"`
+	Price             int  `gorm:"not null" json:"price,omitempty"`
+	CalculatedSum     *int `json:"calculated_sum"`
 
 	SoftwareService SoftwareService `gorm:"foreignKey:SoftwareServiceID"`
 	SoftwareBid     SoftwareBid     `gorm:"foreignKey:SoftwareBidID"`
@@ -71,4 +72,17 @@ type Photo struct {
 type UserData struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+// CalculationResult представляет результат расчета из асинхронного сервиса
+type CalculationResult struct {
+	SoftwareServiceID int `json:"software_service_id"`
+	CalculatedSum     int `json:"calculated_sum"`
+}
+
+// SoftwareBidWithCalculation представляет заявку с информацией о расчетах
+type SoftwareBidWithCalculation struct {
+	SoftwareBid
+	TotalServices      int `json:"total_services"`
+	CalculatedServices int `json:"calculated_services"`
 }

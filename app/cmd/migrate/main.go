@@ -167,7 +167,7 @@ func seedDatabase(db *gorm.DB) error {
 	if count == 0 {
 		initialBids := []ds.SoftwareBid{
 			{
-				Status:     "черновик",
+				Status:     "сформирован",
 				DateCreate: time.Now().Format("2006-01-02"),
 				CreatorID:  1,
 			},
@@ -226,7 +226,7 @@ func seedDatabase(db *gorm.DB) error {
 			},
 			{
 				SoftwareServiceID: 5,
-				SoftwareBidID:     1,
+				SoftwareBidID:     2,
 				Count:             1,
 				Index:             3,
 				Price:             45_000,
